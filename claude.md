@@ -17,7 +17,6 @@ packages/shared: for shared configs, enums, constants, validation schemas, types
 
 - admin
 - user
--
 
 ## Always-on conventions
 

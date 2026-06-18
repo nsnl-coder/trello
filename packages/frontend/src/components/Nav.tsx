@@ -32,6 +32,9 @@ export function Nav() {
         <Link to="/" className="font-semibold text-slate-800">
           Trello Clone
         </Link>
+        <Link to="/projects" className="text-slate-600 hover:text-slate-900">
+          Projects
+        </Link>
         <Link to="/settings/password" className="text-slate-600 hover:text-slate-900">
           Settings
         </Link>

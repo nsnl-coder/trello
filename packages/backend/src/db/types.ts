@@ -1,5 +1,10 @@
 import type { ColumnType, Generated } from "kysely";
-import type { OtpPurpose, Permission } from "shared";
+import type {
+  OtpPurpose,
+  Permission,
+  ProjectPermission,
+  ProjectVisibility,
+} from "shared";
 
 // Required timestamp (no DB default): insertable/updatable as Date or string.
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
@@ -65,6 +70,23 @@ export interface AuthEventsTable {
   created_at: GeneratedTimestamp;
 }
 
+export interface ProjectsTable {
+  id: Generated<string>;
+  owner_id: string;
+  name: string;
+  description: string | null;
+  color: string;
+  visibility: Generated<ProjectVisibility>;
+  created_at: GeneratedTimestamp;
+  updated_at: GeneratedTimestamp;
+}
+
+export interface ProjectAccessTable {
+  project_id: string;
+  user_id: string;
+  permission: ProjectPermission;
+}
+
 export interface Database {
   users: UsersTable;
   roles: RolesTable;
@@ -72,4 +94,6 @@ export interface Database {
   otp_codes: OtpCodesTable;
   refresh_tokens: RefreshTokensTable;
   auth_events: AuthEventsTable;
+  projects: ProjectsTable;
+  project_access: ProjectAccessTable;
 }
