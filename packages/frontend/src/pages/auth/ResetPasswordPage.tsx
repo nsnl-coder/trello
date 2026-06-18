@@ -40,7 +40,7 @@ export function ResetPasswordPage() {
   });
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+    <div className="flex flex-1 items-center justify-center p-4">
       <AuthForm
         title="Reset password"
         submitLabel="Reset password"
@@ -57,7 +57,7 @@ export function ResetPasswordPage() {
             type="email"
             autoComplete="email"
             {...register("email")}
-            className="w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
           />
           {errors.email ? (
             <p className="text-xs text-red-600">{errors.email.message}</p>

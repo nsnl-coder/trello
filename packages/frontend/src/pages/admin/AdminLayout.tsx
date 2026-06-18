@@ -4,9 +4,9 @@ import { Can } from "../../features/rbac/components/Can";
 import { Permission } from "shared";
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
-  `rounded px-3 py-1.5 text-sm font-medium ${
+  `rounded-lg px-3 py-1.5 text-sm font-medium ${
     isActive
-      ? "bg-slate-800 text-white"
+      ? "bg-indigo-600 text-white"
       : "text-slate-600 hover:bg-slate-200 hover:text-slate-900"
   }`;
 

@@ -41,7 +41,7 @@ export function LoginPage() {
   const errKey = mutation.error ? authErrorKey(mutation.error) : null;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+    <div className="flex flex-1 items-center justify-center p-4">
       <AuthForm
         title="Log in"
         submitLabel="Log in"
@@ -68,7 +68,7 @@ export function LoginPage() {
             type="email"
             autoComplete="email"
             {...register("email")}
-            className="w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
           />
           {errors.email ? (
             <p className="text-xs text-red-600">{errors.email.message}</p>

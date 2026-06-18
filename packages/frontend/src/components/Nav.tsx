@@ -78,7 +78,7 @@ export function Nav() {
           type="button"
           onClick={onLogout}
           disabled={logout.isPending}
-          className="flex items-center gap-1.5 rounded bg-slate-800 px-3 py-1.5 font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+          className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
         >
           <LogOut className="h-4 w-4" />
           Log out

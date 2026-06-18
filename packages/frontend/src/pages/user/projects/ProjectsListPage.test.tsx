@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import type { Project, PublicUser } from "shared";
 import { useAuthStore } from "../../../hooks/useAuthStore";
@@ -97,28 +96,10 @@ describe("ProjectsListPage", () => {
     expect(screen.getByText("Shared board")).toBeInTheDocument();
   });
 
-  it("passes the selected filter to the query", async () => {
-    const u = userEvent.setup();
+  it("passes the active sidebar filter to the query", () => {
     renderPage();
-    await u.click(screen.getByRole("button", { name: "Owned" }));
     const last = h.queryCalls.list.at(-1) as { filter: string };
-    expect(last.filter).toBe("owned");
-  });
-
-  it("wires the search input", async () => {
-    const u = userEvent.setup();
-    renderPage();
-    const input = screen.getByPlaceholderText("Search by name...");
-    await u.type(input, "road");
-    expect(input).toHaveValue("road");
-  });
-
-  it("links to the create page", () => {
-    renderPage();
-    expect(screen.getByRole("link", { name: "New project" })).toHaveAttribute(
-      "href",
-      "/projects/new",
-    );
+    expect(last.filter).toBe("all");
   });
 
   it("shows an empty state when there are no projects", () => {

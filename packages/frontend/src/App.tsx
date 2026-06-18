@@ -6,6 +6,10 @@ import { refreshSession } from "./lib/trpc";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { PermissionRoute } from "./components/PermissionRoute";
 import { GuestRoute } from "./components/GuestRoute";
+import { AppLayout } from "./components/AppLayout";
+import { AuthLayout } from "./components/AuthLayout";
+import { Toaster } from "./components/Toaster";
+import { HomePage } from "./pages/HomePage";
 import { RegisterPage } from "./pages/auth/RegisterPage";
 import { LoginPage } from "./pages/auth/LoginPage";
 import { VerifyEmailPage } from "./pages/auth/VerifyEmailPage";
@@ -22,6 +26,12 @@ import { RoleFormPage } from "./pages/admin/roles/RoleFormPage";
 import { UsersListPage } from "./pages/admin/users/UsersListPage";
 import { useCan } from "./features/rbac/hooks/useCan";
 import { ADMIN_READ_PERMS } from "./features/rbac/constants";
+
+// Public landing at "/": marketing home for guests, app for signed-in users.
+function HomeIndex() {
+  const user = useAuthStore((s) => s.user);
+  return user ? <Navigate to="/projects" replace /> : <HomePage />;
+}
 
 // /admin landing: send the user to the first admin section they can read.
 function AdminIndex() {
@@ -58,24 +68,30 @@ export function App() {
   if (hydrating) return null;
 
   return (
-    <Routes>
+    <>
+      <Routes>
+      <Route path="/" element={<HomeIndex />} />
+
       <Route element={<GuestRoute />}>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/verify-email" element={<VerifyEmailPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route element={<AuthLayout />}>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+        </Route>
       </Route>
 
       <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<Navigate to="/projects" replace />} />
-        <Route path="/projects" element={<ProjectsListPage />} />
-        <Route path="/projects/new" element={<ProjectFormPage />} />
-        <Route path="/projects/:id" element={<ProjectDetailPage />} />
-        <Route path="/projects/:id/edit" element={<ProjectFormPage />} />
-        <Route path="/projects/:id/boards/new" element={<BoardFormPage />} />
-        <Route path="/projects/:id/boards/:boardId" element={<BoardDetailPage />} />
-        <Route path="/projects/:id/boards/:boardId/edit" element={<BoardFormPage />} />
+        <Route element={<AppLayout />}>
+          <Route path="/projects" element={<ProjectsListPage />} />
+          <Route path="/projects/new" element={<ProjectFormPage />} />
+          <Route path="/projects/:id" element={<ProjectDetailPage />} />
+          <Route path="/projects/:id/edit" element={<ProjectFormPage />} />
+          <Route path="/projects/:id/boards/new" element={<BoardFormPage />} />
+          <Route path="/projects/:id/boards/:boardId" element={<BoardDetailPage />} />
+          <Route path="/projects/:id/boards/:boardId/edit" element={<BoardFormPage />} />
+        </Route>
       </Route>
 
       <Route
@@ -98,6 +114,8 @@ export function App() {
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+      <Toaster />
+    </>
   );
 }

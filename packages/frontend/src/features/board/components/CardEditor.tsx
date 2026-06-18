@@ -55,7 +55,7 @@ export function CardEditor({
             disabled={!editable}
             maxLength={CARD_TITLE_MAX}
             onChange={(e) => setTitle(e.target.value)}
-            className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500 disabled:bg-slate-100"
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 disabled:bg-slate-100"
           />
           {!valid ? (
             <p className="text-xs text-red-600">Title is required.</p>
@@ -73,7 +73,7 @@ export function CardEditor({
             disabled={!editable}
             maxLength={CARD_DESCRIPTION_MAX}
             onChange={(e) => setDescription(e.target.value)}
-            className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500 disabled:bg-slate-100"
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 disabled:bg-slate-100"
           />
         </div>
 
@@ -86,7 +86,7 @@ export function CardEditor({
             <button
               type="button"
               onClick={onDelete}
-              className="rounded border border-red-300 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50"
+              className="rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50"
             >
               Delete
             </button>
@@ -97,7 +97,7 @@ export function CardEditor({
             <button
               type="button"
               onClick={onClose}
-              className="rounded px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100"
+              className="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100"
             >
               {editable ? "Cancel" : "Close"}
             </button>
@@ -106,7 +106,7 @@ export function CardEditor({
                 type="button"
                 disabled={!valid}
                 onClick={save}
-                className="rounded bg-slate-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+                className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
               >
                 Save
               </button>

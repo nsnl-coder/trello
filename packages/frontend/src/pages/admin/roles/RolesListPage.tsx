@@ -85,7 +85,7 @@ export function RolesListPage() {
         {canManage ? (
           <Link
             to="/admin/roles/new"
-            className="rounded bg-slate-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700"
+            className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
           >
             New role
           </Link>
@@ -95,7 +95,7 @@ export function RolesListPage() {
       {rolesQuery.isLoading ? (
         <p className="text-sm text-slate-500">Loading...</p>
       ) : (
-        <table className="w-full overflow-hidden rounded border border-slate-200 bg-white text-sm">
+        <table className="w-full overflow-hidden rounded-lg border border-slate-200 bg-white text-sm">
           <thead className="bg-slate-100 text-left text-slate-600">
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id}>
@@ -133,7 +133,7 @@ export function RolesListPage() {
 
       {pendingDelete ? (
         <div className="fixed inset-0 flex items-center justify-center bg-black/30 p-4">
-          <div className="w-full max-w-sm rounded bg-white p-5 shadow-lg">
+          <div className="w-full max-w-sm rounded-lg bg-white p-5 shadow-lg">
             <h2 className="text-lg font-semibold text-slate-800">Delete role</h2>
             <p className="mt-2 text-sm text-slate-600">
               Delete <strong>{pendingDelete.name}</strong>? Members keep their
@@ -148,7 +148,7 @@ export function RolesListPage() {
               <button
                 type="button"
                 onClick={() => setPendingDelete(null)}
-                className="rounded px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100"
+                className="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100"
               >
                 Cancel
               </button>
@@ -158,7 +158,7 @@ export function RolesListPage() {
                 onClick={() =>
                   deleteMutation.mutate({ roleId: pendingDelete.id })
                 }
-                className="rounded bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
               >
                 Delete
               </button>

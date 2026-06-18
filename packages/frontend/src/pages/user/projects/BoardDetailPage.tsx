@@ -16,7 +16,6 @@ import {
   type Card,
 } from "shared";
 import { useTRPC } from "../../../lib/trpc";
-import { Nav } from "../../../components/Nav";
 import { Modal } from "../../../components/Modal";
 import { Column } from "../../../features/board/components/Column";
 import { CardEditor } from "../../../features/board/components/CardEditor";
@@ -91,8 +90,7 @@ export function BoardDetailPage() {
   if (dataQuery.error) {
     return (
       <div className="min-h-screen bg-slate-50">
-        <Nav />
-        <main className="mx-auto max-w-3xl p-6">
+        <main className="max-w-3xl p-6">
           <p className="text-sm text-slate-600">Board not found or no access.</p>
           <Link
             to={`/projects/${id}`}
@@ -108,8 +106,7 @@ export function BoardDetailPage() {
   if (!board) {
     return (
       <div className="min-h-screen bg-slate-50">
-        <Nav />
-        <main className="mx-auto max-w-3xl p-6">
+        <main className="max-w-3xl p-6">
           <p className="text-sm text-slate-500">Loading...</p>
         </main>
       </div>
@@ -243,8 +240,7 @@ export function BoardDetailPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50">
-      <Nav />
-      <main className={`flex flex-1 flex-col overflow-hidden ${wide ? "w-full" : "mx-auto w-full max-w-6xl"} px-6 pt-6`}>
+      <main className={`flex flex-1 flex-col overflow-hidden ${wide ? "w-full" : "w-full max-w-6xl"} px-6 pt-6`}>
         <div className="flex items-start justify-between gap-4">
           <div>
             <Link
@@ -269,7 +265,7 @@ export function BoardDetailPage() {
               onClick={toggleWide}
               aria-label={wide ? "Use fixed width" : "Use full width"}
               title={wide ? "Use fixed width" : "Use full width"}
-              className="flex items-center gap-1.5 rounded border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-100"
+              className="flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-100"
             >
               {wide ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
               {wide ? "Fit" : "Full width"}
@@ -277,7 +273,7 @@ export function BoardDetailPage() {
             {editable ? (
               <Link
                 to={`/projects/${id}/boards/${board.id}/edit`}
-                className="flex items-center gap-1.5 rounded border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-100"
+                className="flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-100"
               >
                 <Pencil className="h-4 w-4" />
                 Edit
@@ -287,7 +283,7 @@ export function BoardDetailPage() {
               <button
                 type="button"
                 onClick={() => setShowAccess(true)}
-                className="flex items-center gap-1.5 rounded border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-100"
+                className="flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-100"
               >
                 <Users className="h-4 w-4" />
                 Manage access
@@ -297,7 +293,7 @@ export function BoardDetailPage() {
               <button
                 type="button"
                 onClick={() => setConfirmDelete(true)}
-                className="flex items-center gap-1.5 rounded border border-red-300 px-3 py-1.5 font-medium text-red-600 hover:bg-red-50"
+                className="flex items-center gap-1.5 rounded-lg border border-red-300 px-3 py-1.5 font-medium text-red-600 hover:bg-red-50"
               >
                 <Trash2 className="h-4 w-4" />
                 Delete
@@ -337,7 +333,7 @@ export function BoardDetailPage() {
               <button
                 type="button"
                 onClick={addColumn}
-                className="flex w-72 shrink-0 items-center gap-1 self-start rounded border border-dashed border-slate-300 px-3 py-2 text-left text-sm font-medium text-slate-500 hover:bg-slate-100"
+                className="flex w-72 shrink-0 items-center gap-1 self-start rounded-lg border border-dashed border-slate-300 px-3 py-2 text-left text-sm font-medium text-slate-500 hover:bg-slate-100"
               >
                 <Plus className="h-4 w-4" />
                 Add column
@@ -410,7 +406,7 @@ export function BoardDetailPage() {
               <button
                 type="button"
                 onClick={() => setConfirmDelete(false)}
-                className="rounded px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100"
+                className="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100"
               >
                 Cancel
               </button>
@@ -418,7 +414,7 @@ export function BoardDetailPage() {
                 type="button"
                 disabled={deleteBoardMutation.isPending}
                 onClick={() => deleteBoardMutation.mutate({ id: board.id })}
-                className="rounded bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
               >
                 Delete
               </button>
