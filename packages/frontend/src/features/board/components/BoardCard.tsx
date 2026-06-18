@@ -7,7 +7,7 @@ export function BoardCard({ board }: { board: Board }) {
   return (
     <Link
       to={`/projects/${board.projectId}/boards/${board.id}`}
-      className="flex flex-col gap-2 rounded border border-slate-200 bg-white p-4 hover:border-slate-300 hover:shadow-sm"
+      className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-4 hover:border-slate-300 hover:shadow-sm"
     >
       <div className="flex items-center gap-2">
         <KanbanSquare aria-hidden className="h-4 w-4 shrink-0" style={{ color: board.color }} />
@@ -17,7 +17,7 @@ export function BoardCard({ board }: { board: Board }) {
         {board.description || "No description"}
       </p>
       <div className="flex items-center gap-2 text-xs">
-        <span className="rounded bg-indigo-100 px-2 py-0.5 font-medium text-indigo-700">
+        <span className="rounded-lg bg-indigo-100 px-2 py-0.5 font-medium text-indigo-700">
           {PERMISSION_LABELS[board.myPermission]}
         </span>
       </div>

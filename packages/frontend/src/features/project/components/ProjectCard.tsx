@@ -6,7 +6,7 @@ export function ProjectCard({ project }: { project: Project }) {
   return (
     <Link
       to={`/projects/${project.id}`}
-      className="flex flex-col gap-2 rounded border border-slate-200 bg-white p-4 hover:border-slate-300 hover:shadow-sm"
+      className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-4 hover:border-slate-300 hover:shadow-sm"
     >
       <div className="flex items-center gap-2">
         <span
@@ -20,10 +20,10 @@ export function ProjectCard({ project }: { project: Project }) {
         {project.description || "No description"}
       </p>
       <div className="flex items-center gap-2 text-xs">
-        <span className="rounded bg-slate-100 px-2 py-0.5 font-medium text-slate-600">
+        <span className="rounded-lg bg-slate-100 px-2 py-0.5 font-medium text-slate-600">
           {VISIBILITY_LABELS[project.visibility]}
         </span>
-        <span className="rounded bg-indigo-100 px-2 py-0.5 font-medium text-indigo-700">
+        <span className="rounded-lg bg-indigo-100 px-2 py-0.5 font-medium text-indigo-700">
           {PERMISSION_LABELS[project.myPermission]}
         </span>
       </div>

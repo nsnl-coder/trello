@@ -20,7 +20,7 @@ export function Modal({ open, onClose, title, children, widthClassName = "max-w-
         <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30" />
         <Dialog.Content
           aria-describedby={undefined}
-          className={`fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 rounded bg-white p-5 shadow-lg focus:outline-none ${widthClassName}`}
+          className={`fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 rounded-lg bg-white p-5 shadow-lg focus:outline-none ${widthClassName}`}
         >
           <div className="mb-3 flex items-center justify-between gap-4">
             <Dialog.Title className="text-lg font-semibold text-slate-800">
@@ -30,7 +30,7 @@ export function Modal({ open, onClose, title, children, widthClassName = "max-w-
               <button
                 type="button"
                 aria-label="Close"
-                className="rounded p-1 text-slate-500 hover:bg-slate-100"
+                className="rounded-lg p-1 text-slate-500 hover:bg-slate-100"
               >
                 <X className="h-5 w-5" />
               </button>

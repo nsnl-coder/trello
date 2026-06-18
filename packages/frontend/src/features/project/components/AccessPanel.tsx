@@ -61,7 +61,7 @@ export function AccessPanel({ projectId }: { projectId: string }) {
             type="email"
             placeholder="user@example.com"
             {...register("email")}
-            className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
           />
           {errors.email ? (
             <p className="text-xs text-red-600">{errors.email.message}</p>
@@ -71,7 +71,7 @@ export function AccessPanel({ projectId }: { projectId: string }) {
           aria-label="permission"
           value={permission}
           onChange={(e) => setPermission(e.target.value as ProjectPermission)}
-          className="rounded border border-slate-300 px-2 py-2 text-sm"
+          className="rounded-lg border border-slate-300 px-2 py-2 text-sm"
         >
           <option value={ProjectPermission.View}>Viewer</option>
           <option value={ProjectPermission.Edit}>Editor</option>
@@ -79,7 +79,7 @@ export function AccessPanel({ projectId }: { projectId: string }) {
         <button
           type="submit"
           disabled={grantMutation.isPending}
-          className="rounded bg-slate-800 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+          className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
         >
           Share
         </button>
@@ -89,7 +89,7 @@ export function AccessPanel({ projectId }: { projectId: string }) {
         <p className="mt-2 text-sm text-red-600">{projectErrorMessage(grantMutation.error)}</p>
       ) : null}
 
-      <ul className="mt-4 divide-y divide-slate-100 rounded border border-slate-200 bg-white">
+      <ul className="mt-4 divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
         {entries.map((entry) => (
           <li key={entry.userId} className="flex items-center justify-between gap-2 px-4 py-2 text-sm">
             <span className="truncate text-slate-700">{entry.email}</span>
@@ -100,7 +100,7 @@ export function AccessPanel({ projectId }: { projectId: string }) {
                 onChange={(e) =>
                   onChangePermission(entry, e.target.value as ProjectPermission)
                 }
-                className="rounded border border-slate-300 px-2 py-1 text-sm"
+                className="rounded-lg border border-slate-300 px-2 py-1 text-sm"
               >
                 <option value={ProjectPermission.View}>Viewer</option>
                 <option value={ProjectPermission.Edit}>Editor</option>

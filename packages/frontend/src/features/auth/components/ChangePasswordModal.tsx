@@ -39,7 +39,7 @@ export function ChangePasswordModal({ onClose }: { onClose: () => void }) {
         {mutation.error ? (
           <p
             role="alert"
-            className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+            className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
           >
             {authErrorMessage(mutation.error)}
           </p>
@@ -47,7 +47,7 @@ export function ChangePasswordModal({ onClose }: { onClose: () => void }) {
         {mutation.isSuccess ? (
           <p
             role="status"
-            className="rounded border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700"
+            className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700"
           >
             Password updated successfully.
           </p>
@@ -75,7 +75,7 @@ export function ChangePasswordModal({ onClose }: { onClose: () => void }) {
         <button
           type="submit"
           disabled={mutation.isPending}
-          className="mt-2 rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {mutation.isPending ? "Please wait..." : "Update password"}
         </button>

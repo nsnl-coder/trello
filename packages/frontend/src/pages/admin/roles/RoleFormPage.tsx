@@ -126,7 +126,7 @@ export function RoleFormPage() {
             id="name"
             disabled={disabled}
             {...register("name")}
-            className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500 disabled:bg-slate-100"
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 disabled:bg-slate-100"
           />
           {errors.name ? (
             <p className="text-xs text-red-600">{errors.name.message}</p>
@@ -145,7 +145,7 @@ export function RoleFormPage() {
             rows={2}
             disabled={disabled}
             {...register("description")}
-            className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500 disabled:bg-slate-100"
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 disabled:bg-slate-100"
           />
         </div>
 
@@ -157,7 +157,7 @@ export function RoleFormPage() {
           <button
             type="submit"
             disabled={createMutation.isPending || updateMutation.isPending}
-            className="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
           >
             {isEdit ? "Save details" : "Create role"}
           </button>
@@ -195,7 +195,7 @@ export function RoleFormPage() {
             type="button"
             onClick={savePermissions}
             disabled={setPermsMutation.isPending}
-            className="mt-3 rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+            className="mt-3 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
           >
             Save permissions
           </button>

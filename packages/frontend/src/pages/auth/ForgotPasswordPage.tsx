@@ -20,7 +20,7 @@ export function ForgotPasswordPage() {
   const onSubmit = handleSubmit((values) => mutation.mutate(values));
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+    <div className="flex flex-1 items-center justify-center p-4">
       <AuthForm
         title="Forgot password"
         submitLabel="Send reset code"
@@ -29,7 +29,7 @@ export function ForgotPasswordPage() {
         onSubmit={onSubmit}
       >
         {mutation.isSuccess ? (
-          <p className="rounded border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+          <p className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
             If an account exists for that email, a reset code has been sent.
             Check your inbox.
           </p>
@@ -44,7 +44,7 @@ export function ForgotPasswordPage() {
             type="email"
             autoComplete="email"
             {...register("email")}
-            className="w-full rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
           />
           {errors.email ? (
             <p className="text-xs text-red-600">{errors.email.message}</p>

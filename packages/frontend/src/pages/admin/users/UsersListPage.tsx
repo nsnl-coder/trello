@@ -58,7 +58,7 @@ export function UsersListPage() {
           setSearch(e.target.value);
           setOffset(0);
         }}
-        className="mb-4 w-full max-w-sm rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+        className="mb-4 w-full max-w-sm rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
       />
 
       {assignMutation.error ? (
@@ -70,7 +70,7 @@ export function UsersListPage() {
       {usersQuery.isLoading ? (
         <p className="text-sm text-slate-500">Loading...</p>
       ) : (
-        <table className="w-full overflow-hidden rounded border border-slate-200 bg-white text-sm">
+        <table className="w-full overflow-hidden rounded-lg border border-slate-200 bg-white text-sm">
           <thead className="bg-slate-100 text-left text-slate-600">
             <tr>
               <th className="px-4 py-2 font-medium">Email</th>
@@ -86,7 +86,7 @@ export function UsersListPage() {
                 <td className="px-4 py-2">{u.emailVerified ? "Yes" : "No"}</td>
                 <td className="px-4 py-2">
                   {u.isSuperuser ? (
-                    <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                    <span className="rounded-lg bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
                       Superuser
                     </span>
                   ) : (
@@ -99,7 +99,7 @@ export function UsersListPage() {
                       value={u.role?.id ?? ""}
                       disabled={assignMutation.isPending}
                       onChange={(e) => onAssign(u, e.target.value)}
-                      className="rounded border border-slate-300 px-2 py-1 text-sm"
+                      className="rounded-lg border border-slate-300 px-2 py-1 text-sm"
                     >
                       <option value="">No role</option>
                       {roles.map((r) => (
@@ -130,7 +130,7 @@ export function UsersListPage() {
           type="button"
           disabled={offset === 0}
           onClick={() => setOffset((o) => Math.max(0, o - PAGE_SIZE))}
-          className="rounded border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+          className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
         >
           Previous
         </button>
@@ -141,7 +141,7 @@ export function UsersListPage() {
           type="button"
           disabled={users.length < PAGE_SIZE}
           onClick={() => setOffset((o) => o + PAGE_SIZE)}
-          className="rounded border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+          className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
         >
           Next
         </button>

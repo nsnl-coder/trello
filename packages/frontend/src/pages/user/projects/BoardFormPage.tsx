@@ -10,7 +10,6 @@ import {
   z,
 } from "shared";
 import { useTRPC } from "../../../lib/trpc";
-import { Nav } from "../../../components/Nav";
 import {
   BoardFormFields,
   type BoardFormValues,
@@ -106,8 +105,7 @@ export function BoardFormPage() {
   if (isEdit && boardQuery.error) {
     return (
       <div className="min-h-screen bg-slate-50">
-        <Nav />
-        <main className="mx-auto max-w-2xl p-6">
+        <main className="max-w-2xl p-6">
           <p className="text-sm text-slate-600">Board not found or no access.</p>
           <Link
             to={`/projects/${id}`}
@@ -122,8 +120,7 @@ export function BoardFormPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <Nav />
-      <main className="mx-auto max-w-2xl p-6">
+      <main className="max-w-2xl p-6">
         <h1 className="mb-4 text-2xl font-bold text-slate-800">
           {isEdit ? (readOnly ? "Board" : "Edit board") : "New board"}
         </h1>
@@ -144,13 +141,13 @@ export function BoardFormPage() {
               <button
                 type="submit"
                 disabled={createMutation.isPending || updateMutation.isPending}
-                className="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
               >
                 {isEdit ? "Save" : "Create board"}
               </button>
               <Link
                 to={isEdit ? `/projects/${id}/boards/${boardId}` : `/projects/${id}`}
-                className="rounded px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
+                className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
               >
                 Cancel
               </Link>

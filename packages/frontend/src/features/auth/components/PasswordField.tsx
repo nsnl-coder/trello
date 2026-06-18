@@ -26,7 +26,7 @@ export const PasswordField = forwardRef<HTMLInputElement, PasswordFieldProps>(
             type={visible ? "text" : "password"}
             aria-invalid={error ? true : undefined}
             aria-describedby={errorId}
-            className="w-full rounded border border-slate-300 px-3 py-2 pr-16 text-sm outline-none focus:border-slate-500"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 pr-16 text-sm outline-none focus:border-indigo-500"
           />
           <button
             type="button"

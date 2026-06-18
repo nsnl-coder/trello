@@ -30,7 +30,7 @@ export function CardTile({ card, editable, onOpen }: Props) {
       onKeyDown={(e) => {
         if (e.key === "Enter") onOpen(card);
       }}
-      className={`rounded border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm ${
+      className={`rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm ${
         editable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
       }`}
     >
