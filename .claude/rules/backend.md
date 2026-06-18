@@ -1,0 +1,44 @@
+---
+paths: ["packages/backend"]
+---
+
+## Required Library:
+
+- typescript
+- express
+- @trpc/server + superjson
+- kysely
+- mjml + nodemailer + mailtrap
+- pg (postgresql)
+- zod
+- bcrypt
+- dotenv
+
+## Folder Structure: Feature-based structure
+
+Follow the naming convention please
+
+```txt
+src/
+  config/
+    env.config.ts              # App-wide config, env config
+
+  migrations/                  # Kysely migration files
+    <increment>.<feature>.ts   # example: 001.migration.ts
+
+  features/
+    <feature>/
+      <feature>.service.ts     # Business logic
+      <feature>.repo.ts        # Database access / Kysely queries
+      <feature>.router.ts      # tRPC router for this feature
+
+  scripts/                     # One-off scripts, seed scripts
+    <script_name>.script.ts
+
+  trpc/
+    context.ts                 # tRPC context creation
+    router.ts                  # Combine all feature routers
+    trpc.ts                    # tRPC init, procedures, middleware
+
+  index.ts                     # App entry point
+```
