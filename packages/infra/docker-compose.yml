@@ -1,0 +1,28 @@
+# run from repo root:
+#   docker compose -f packages/infra/docker-compose.yml up -d --build
+services:
+  backend:
+    build:
+      context: ../..
+      dockerfile: packages/infra/backend.Dockerfile
+    container_name: trelloclone3-api
+    restart: unless-stopped
+    env_file:
+      - path: ../backend/.env.prod
+        required: false
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+    expose:
+      - "4000"
+
+  frontend:
+    build:
+      context: ../..
+      dockerfile: packages/infra/frontend.Dockerfile
+    container_name: trelloclone3-web
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
