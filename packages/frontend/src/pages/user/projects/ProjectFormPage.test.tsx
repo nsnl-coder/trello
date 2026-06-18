@@ -1,0 +1,175 @@
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import type { Project, PublicUser } from "shared";
+import { useAuthStore } from "../../../hooks/useAuthStore";
+
+const h = vi.hoisted(() => ({
+  queryData: {} as Record<string, unknown>,
+  queryError: {} as Record<string, unknown>,
+  mutateCalls: {} as Record<string, unknown[]>,
+  mutationResult: {} as Record<string, unknown>,
+}));
+
+vi.mock("../../../lib/trpc", () => {
+  const leaf = (path: string) => ({
+    queryOptions: (input: unknown) => ({ queryKey: [path, input] }),
+    queryKey: (input?: unknown) => [path, input],
+    mutationOptions: (opts: Record<string, unknown> = {}) => ({ ...opts, _mutationKey: path }),
+  });
+  const proxy = new Proxy({}, { get: () => new Proxy({}, { get: (_t, ep: string) => leaf(ep) }) });
+  return { useTRPC: () => proxy };
+});
+
+vi.mock("@tanstack/react-query", async (orig) => {
+  const actual = await orig<typeof import("@tanstack/react-query")>();
+  return {
+    ...actual,
+    useQuery: (opts: { queryKey: unknown[] }) => ({
+      data: h.queryData[opts.queryKey[0] as string],
+      isLoading: false,
+      error: h.queryError[opts.queryKey[0] as string] ?? null,
+    }),
+    useMutation: (opts: { _mutationKey: string; onSuccess?: (r: unknown, v: unknown) => void }) => ({
+      mutate: (vars: unknown, runtime?: { onSuccess?: (r: unknown, v: unknown) => void }) => {
+        (h.mutateCalls[opts._mutationKey] ??= []).push(vars);
+        const r = h.mutationResult[opts._mutationKey];
+        opts.onSuccess?.(r, vars);
+        runtime?.onSuccess?.(r, vars);
+      },
+      isPending: false,
+      error: null,
+    }),
+    useQueryClient: () => ({ invalidateQueries: () => {} }),
+  };
+});
+
+const { ProjectFormPage } = await import("./ProjectFormPage");
+
+const user: PublicUser = {
+  id: "u1",
+  email: "u@x.io",
+  isSuperuser: false,
+  roleId: null,
+  emailVerified: true,
+  permissions: [],
+};
+
+function makeProject(over: Partial<Project> = {}): Project {
+  return {
+    id: "p1",
+    ownerId: "u1",
+    name: "Roadmap",
+    description: "Q3",
+    color: "#10b981",
+    visibility: "private",
+    myPermission: "owner",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...over,
+  };
+}
+
+function renderAt(path: string) {
+  return render(
+    <MemoryRouter initialEntries={[path]}>
+      <Routes>
+        <Route path="/projects/new" element={<ProjectFormPage />} />
+        <Route path="/projects/:id/edit" element={<ProjectFormPage />} />
+        <Route path="/projects/:id" element={<div>detail-page</div>} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+beforeEach(() => {
+  h.queryData = {};
+  h.queryError = {};
+  h.mutateCalls = {};
+  h.mutationResult = {};
+  useAuthStore.getState().setAuth(user);
+});
+
+describe("ProjectFormPage (create)", () => {
+  it("submits the create input shape with defaults", async () => {
+    const u = userEvent.setup();
+    h.mutationResult.create = { id: "p9" };
+    renderAt("/projects/new");
+
+    await u.type(screen.getByLabelText("Name"), "New board");
+    await u.click(screen.getByRole("button", { name: "Create project" }));
+
+    expect(h.mutateCalls.create).toEqual([
+      {
+        name: "New board",
+        description: undefined,
+        color: "#4f46e5",
+        visibility: "private",
+      },
+    ]);
+  });
+
+  it("navigates to the created project", async () => {
+    const u = userEvent.setup();
+    h.mutationResult.create = { id: "p9" };
+    renderAt("/projects/new");
+    await u.type(screen.getByLabelText("Name"), "New board");
+    await u.click(screen.getByRole("button", { name: "Create project" }));
+    expect(screen.getByText("detail-page")).toBeInTheDocument();
+  });
+
+  it("does not submit when the name is empty", async () => {
+    const u = userEvent.setup();
+    renderAt("/projects/new");
+    await u.click(screen.getByRole("button", { name: "Create project" }));
+    expect(h.mutateCalls.create).toBeUndefined();
+  });
+});
+
+describe("ProjectFormPage (edit)", () => {
+  it("prefills from the loaded project", () => {
+    h.queryData = { get: makeProject() };
+    renderAt("/projects/p1/edit");
+    expect(screen.getByLabelText("Name")).toHaveValue("Roadmap");
+  });
+
+  it("disables fields for a viewer", () => {
+    h.queryData = { get: makeProject({ myPermission: "view" }) };
+    renderAt("/projects/p1/edit");
+    expect(screen.getByLabelText("Name")).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
+  });
+
+  it("disables visibility for a non-owner editor", () => {
+    h.queryData = { get: makeProject({ myPermission: "edit" }) };
+    renderAt("/projects/p1/edit");
+    expect(screen.getByLabelText("Name")).not.toBeDisabled();
+    expect(screen.getByLabelText("Visibility")).toBeDisabled();
+  });
+
+  it("submits an update patch on save", async () => {
+    const u = userEvent.setup();
+    h.queryData = { get: makeProject() };
+    renderAt("/projects/p1/edit");
+    const name = screen.getByLabelText("Name");
+    await u.clear(name);
+    await u.type(name, "Renamed");
+    await u.click(screen.getByRole("button", { name: "Save" }));
+    expect(h.mutateCalls.update).toEqual([
+      {
+        id: "p1",
+        name: "Renamed",
+        description: "Q3",
+        color: "#10b981",
+        visibility: "private",
+      },
+    ]);
+  });
+
+  it("shows a no-access state on query error", () => {
+    h.queryError = { get: new Error("nope") };
+    renderAt("/projects/p1/edit");
+    expect(screen.getByText(/not found or no access/)).toBeInTheDocument();
+  });
+});

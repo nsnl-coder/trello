@@ -1,0 +1,130 @@
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import type { Project, PublicUser } from "shared";
+import { useAuthStore } from "../../../hooks/useAuthStore";
+
+const h = vi.hoisted(() => ({
+  queryData: {} as Record<string, unknown>,
+  queryError: {} as Record<string, unknown>,
+  mutateCalls: {} as Record<string, unknown[]>,
+}));
+
+vi.mock("../../../lib/trpc", () => {
+  const leaf = (path: string) => ({
+    queryOptions: (input: unknown) => ({ queryKey: [path, input] }),
+    queryKey: (input?: unknown) => [path, input],
+    mutationOptions: (opts: Record<string, unknown> = {}) => ({ ...opts, _mutationKey: path }),
+  });
+  const proxy = new Proxy({}, { get: () => new Proxy({}, { get: (_t, ep: string) => leaf(ep) }) });
+  return { useTRPC: () => proxy };
+});
+
+vi.mock("@tanstack/react-query", async (orig) => {
+  const actual = await orig<typeof import("@tanstack/react-query")>();
+  return {
+    ...actual,
+    useQuery: (opts: { queryKey: unknown[] }) => ({
+      data: h.queryData[opts.queryKey[0] as string],
+      isLoading: false,
+      error: h.queryError[opts.queryKey[0] as string] ?? null,
+    }),
+    useMutation: (opts: { _mutationKey: string; onSuccess?: () => void }) => ({
+      mutate: (vars: unknown) => {
+        (h.mutateCalls[opts._mutationKey] ??= []).push(vars);
+        opts.onSuccess?.();
+      },
+      isPending: false,
+      error: null,
+    }),
+    useQueryClient: () => ({ invalidateQueries: () => {} }),
+  };
+});
+
+const { ProjectDetailPage } = await import("./ProjectDetailPage");
+
+const user: PublicUser = {
+  id: "u1",
+  email: "u@x.io",
+  isSuperuser: false,
+  roleId: null,
+  emailVerified: true,
+  permissions: [],
+};
+
+function makeProject(over: Partial<Project> = {}): Project {
+  return {
+    id: "p1",
+    ownerId: "u1",
+    name: "Roadmap",
+    description: "Q3",
+    color: "#10b981",
+    visibility: "private",
+    myPermission: "owner",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...over,
+  };
+}
+
+function renderPage() {
+  return render(
+    <MemoryRouter initialEntries={["/projects/p1"]}>
+      <Routes>
+        <Route path="/projects/p1" element={<ProjectDetailPage />} />
+        <Route path="/projects" element={<div>projects-list</div>} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+beforeEach(() => {
+  h.queryData = { accessList: [] };
+  h.queryError = {};
+  h.mutateCalls = {};
+  useAuthStore.getState().setAuth(user);
+});
+
+describe("ProjectDetailPage", () => {
+  it("shows Edit, Delete and Access for the owner", () => {
+    h.queryData = { get: makeProject(), accessList: [] };
+    renderPage();
+    expect(screen.getByRole("link", { name: "Edit" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Delete" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Access" })).toBeInTheDocument();
+  });
+
+  it("shows Edit but no Delete or Access for an editor", () => {
+    h.queryData = { get: makeProject({ ownerId: "u2", myPermission: "edit" }), accessList: [] };
+    renderPage();
+    expect(screen.getByRole("link", { name: "Edit" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Delete" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Access" })).toBeNull();
+  });
+
+  it("hides Edit and Delete for a viewer", () => {
+    h.queryData = { get: makeProject({ ownerId: "u2", myPermission: "view" }), accessList: [] };
+    renderPage();
+    expect(screen.queryByRole("link", { name: "Edit" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Delete" })).toBeNull();
+  });
+
+  it("deletes and redirects to the list", async () => {
+    const u = userEvent.setup();
+    h.queryData = { get: makeProject(), accessList: [] };
+    renderPage();
+    await u.click(screen.getByRole("button", { name: "Delete" }));
+    // confirm modal
+    const modalDelete = screen.getAllByRole("button", { name: "Delete" }).at(-1)!;
+    await u.click(modalDelete);
+    expect(h.mutateCalls.delete).toEqual([{ id: "p1" }]);
+    expect(screen.getByText("projects-list")).toBeInTheDocument();
+  });
+
+  it("shows a no-access state on query error", () => {
+    h.queryError = { get: new Error("nope") };
+    renderPage();
+    expect(screen.getByText(/not found or no access/)).toBeInTheDocument();
+  });
+});

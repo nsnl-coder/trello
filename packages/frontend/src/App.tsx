@@ -12,7 +12,9 @@ import { VerifyEmailPage } from "./pages/auth/VerifyEmailPage";
 import { ForgotPasswordPage } from "./pages/auth/ForgotPasswordPage";
 import { ResetPasswordPage } from "./pages/auth/ResetPasswordPage";
 import { ChangePasswordPage } from "./pages/user/ChangePasswordPage";
-import { HomePage } from "./pages/user/HomePage";
+import { ProjectsListPage } from "./pages/user/projects/ProjectsListPage";
+import { ProjectFormPage } from "./pages/user/projects/ProjectFormPage";
+import { ProjectDetailPage } from "./pages/user/projects/ProjectDetailPage";
 import { AdminLayout } from "./pages/admin/AdminLayout";
 import { RolesListPage } from "./pages/admin/roles/RolesListPage";
 import { RoleFormPage } from "./pages/admin/roles/RoleFormPage";
@@ -65,7 +67,11 @@ export function App() {
       </Route>
 
       <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<Navigate to="/projects" replace />} />
+        <Route path="/projects" element={<ProjectsListPage />} />
+        <Route path="/projects/new" element={<ProjectFormPage />} />
+        <Route path="/projects/:id" element={<ProjectDetailPage />} />
+        <Route path="/projects/:id/edit" element={<ProjectFormPage />} />
         <Route path="/settings/password" element={<ChangePasswordPage />} />
       </Route>
 

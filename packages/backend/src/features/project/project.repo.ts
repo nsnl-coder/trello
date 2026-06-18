@@ -1,0 +1,177 @@
+import type { Kysely } from "kysely";
+import type {
+  ListProjectsInput,
+  ProjectPermission,
+  ProjectVisibility,
+} from "shared";
+import type { Database } from "../../db/types.js";
+
+export type Db = Kysely<Database>;
+
+export function createProject(
+  db: Db,
+  input: {
+    ownerId: string;
+    name: string;
+    description: string | null;
+    color: string;
+    visibility: ProjectVisibility;
+  },
+) {
+  return db
+    .insertInto("projects")
+    .values({
+      owner_id: input.ownerId,
+      name: input.name,
+      description: input.description,
+      color: input.color,
+      visibility: input.visibility,
+    })
+    .returningAll()
+    .executeTakeFirstOrThrow();
+}
+
+export function findProjectById(db: Db, id: string) {
+  return db
+    .selectFrom("projects")
+    .selectAll()
+    .where("id", "=", id)
+    .executeTakeFirst();
+}
+
+// Projects the user owns or has an explicit grant on. Public-but-not-shared
+// projects are reachable by direct id, not auto-listed.
+export function listProjectsForUser(
+  db: Db,
+  userId: string,
+  opts: ListProjectsInput,
+) {
+  let q = db
+    .selectFrom("projects")
+    .leftJoin("project_access", (j) =>
+      j
+        .onRef("project_access.project_id", "=", "projects.id")
+        .on("project_access.user_id", "=", userId),
+    )
+    .select([
+      "projects.id as id",
+      "projects.owner_id as owner_id",
+      "projects.name as name",
+      "projects.description as description",
+      "projects.color as color",
+      "projects.visibility as visibility",
+      "projects.created_at as created_at",
+      "projects.updated_at as updated_at",
+      "project_access.permission as access_permission",
+    ])
+    .orderBy("projects.updated_at", "desc")
+    .limit(opts.limit)
+    .offset(opts.offset);
+
+  if (opts.filter === "owned") {
+    q = q.where("projects.owner_id", "=", userId);
+  } else if (opts.filter === "shared") {
+    q = q
+      .where("projects.owner_id", "!=", userId)
+      .where("project_access.permission", "is not", null);
+  } else {
+    q = q.where((eb) =>
+      eb.or([
+        eb("projects.owner_id", "=", userId),
+        eb("project_access.permission", "is not", null),
+      ]),
+    );
+  }
+
+  if (opts.search) {
+    q = q.where("projects.name", "ilike", `%${opts.search}%`);
+  }
+  return q.execute();
+}
+
+export function updateProject(
+  db: Db,
+  id: string,
+  patch: {
+    name?: string;
+    description?: string | null;
+    color?: string;
+    visibility?: ProjectVisibility;
+  },
+) {
+  return db
+    .updateTable("projects")
+    .set({ ...patch, updated_at: new Date() })
+    .where("id", "=", id)
+    .returningAll()
+    .executeTakeFirst();
+}
+
+export function deleteProject(db: Db, id: string) {
+  return db.deleteFrom("projects").where("id", "=", id).execute();
+}
+
+// --- access ---
+
+export async function findAccess(
+  db: Db,
+  projectId: string,
+  userId: string,
+): Promise<ProjectPermission | undefined> {
+  const row = await db
+    .selectFrom("project_access")
+    .select("permission")
+    .where("project_id", "=", projectId)
+    .where("user_id", "=", userId)
+    .executeTakeFirst();
+  return row?.permission;
+}
+
+export function listAccess(db: Db, projectId: string) {
+  return db
+    .selectFrom("project_access")
+    .innerJoin("users", "users.id", "project_access.user_id")
+    .select([
+      "project_access.user_id as user_id",
+      "users.email as email",
+      "project_access.permission as permission",
+    ])
+    .where("project_access.project_id", "=", projectId)
+    .orderBy("users.email", "asc")
+    .execute();
+}
+
+export async function upsertAccess(
+  db: Db,
+  projectId: string,
+  userId: string,
+  permission: ProjectPermission,
+): Promise<void> {
+  await db
+    .insertInto("project_access")
+    .values({ project_id: projectId, user_id: userId, permission })
+    .onConflict((oc) =>
+      oc.columns(["project_id", "user_id"]).doUpdateSet({ permission }),
+    )
+    .execute();
+}
+
+export async function deleteAccess(
+  db: Db,
+  projectId: string,
+  userId: string,
+): Promise<void> {
+  await db
+    .deleteFrom("project_access")
+    .where("project_id", "=", projectId)
+    .where("user_id", "=", userId)
+    .execute();
+}
+
+export function findUserByEmail(db: Db, email: string) {
+  return db
+    .selectFrom("users")
+    .select(["id", "email"])
+    .where("email", "=", email)
+    .executeTakeFirst();
+}
