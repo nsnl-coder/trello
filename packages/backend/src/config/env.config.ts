@@ -34,6 +34,13 @@ const schema = z.object({
     .number()
     .default(7 * 24 * 60 * 60 * 1000),
 
+  // Allowed browser origins for credentialed CORS (frontend on a different
+  // subdomain than the API). Comma-separated; empty -> no CORS (same-origin).
+  CORS_ORIGINS: z
+    .string()
+    .default("")
+    .transform((v) => v.split(",").map((s) => s.trim()).filter(Boolean)),
+
   // Cookie Secure flag: default true (fail safe); set false only for local HTTP dev.
   COOKIE_SECURE: z
     .enum(["true", "false"])

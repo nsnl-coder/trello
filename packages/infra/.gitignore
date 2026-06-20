@@ -1,0 +1,4 @@
+# Origin TLS material - never commit private keys/certs.
+certs/*.pem
+certs/*.key
+!certs/README.md
