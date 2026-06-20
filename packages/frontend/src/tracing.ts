@@ -10,8 +10,19 @@ import { FetchInstrumentation } from "@opentelemetry/instrumentation-fetch";
 import { XMLHttpRequestInstrumentation } from "@opentelemetry/instrumentation-xml-http-request";
 import { config } from "./config/env.config";
 
-// Same-origin API; inject traceparent on calls to our own backend.
-const apiUrls = [new RegExp(`${location.origin}/(trpc|api)`)];
+// Inject traceparent on calls to our own backend. The tRPC client may live on a
+// different origin (config.apiUrl), while client-log/OTLP stay same-origin.
+const apiOrigin = (() => {
+  try {
+    return new URL(config.apiUrl, location.origin).origin;
+  } catch {
+    return location.origin;
+  }
+})();
+const apiUrls = [
+  new RegExp(`${location.origin}/(trpc|api)`),
+  new RegExp(`${apiOrigin}/(trpc|api)`),
+];
 
 // Browser can't reach internal tempo:4318 -> ship to the public nginx /otlp path.
 // No endpoint (local) -> print spans to the console instead.

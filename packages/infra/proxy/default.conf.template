@@ -1,0 +1,86 @@
+# Dedicated reverse proxy / TLS terminator. Rendered by the nginx image's
+# envsubst at startup: ${APP_DOMAIN} ${API_DOMAIN} ${LANDING_DOMAIN} come from
+# the compose env (NGINX_ENVSUBST_FILTER limits substitution to *DOMAIN* vars so
+# nginx runtime vars like $host survive). Cloudflare handles edge TLS; this is
+# the origin, so it serves a Cloudflare Origin CA cert (see snippets/ssl.conf).
+
+include /etc/nginx/snippets/cloudflare-realip.conf;
+
+# Extract the bare trace-id (2nd field of W3C traceparent), else fall back.
+map $http_traceparent $trace_id {
+  "~^[0-9a-f]{2}-(?<tid>[0-9a-f]{32})-" $tid;
+  default                               $request_id;
+}
+
+log_format proxy_json escape=json
+  '{"time":"$time_iso8601","service":"nginx-proxy","level":"info",'
+  '"host":"$host","method":"$request_method","path":"$uri","status":$status,'
+  '"responseTime":$request_time,"traceId":"$trace_id","ip":"$remote_addr"}';
+
+# Reject unknown Host headers (direct-to-IP scans) before TLS routing.
+server {
+  listen 80 default_server;
+  listen 443 ssl default_server;
+  http2 on;
+  server_name _;
+  include /etc/nginx/snippets/ssl.conf;
+  return 444;
+}
+
+# All known hosts: redirect HTTP -> HTTPS.
+server {
+  listen 80;
+  server_name ${APP_DOMAIN} ${API_DOMAIN} ${LANDING_DOMAIN};
+  return 301 https://$host$request_uri;
+}
+
+# Frontend SPA. Same-origin: the frontend container also proxies /trpc, /api,
+# /otlp to the backend, so no CORS is introduced.
+server {
+  listen 443 ssl;
+  http2 on;
+  server_name ${APP_DOMAIN};
+  include /etc/nginx/snippets/ssl.conf;
+
+  access_log /dev/stdout proxy_json;
+  error_log  /dev/stderr;
+
+  location / {
+    include /etc/nginx/snippets/proxy_headers.conf;
+    proxy_pass http://frontend:80;
+  }
+}
+
+# Backend API direct access (REST + tRPC + swagger). /metrics stays internal.
+server {
+  listen 443 ssl;
+  http2 on;
+  server_name ${API_DOMAIN};
+  include /etc/nginx/snippets/ssl.conf;
+
+  access_log /dev/stdout proxy_json;
+  error_log  /dev/stderr;
+
+  location = /metrics { return 404; }
+
+  location / {
+    include /etc/nginx/snippets/proxy_headers.conf;
+    proxy_pass http://backend:4000;
+  }
+}
+
+# Landing page (Next.js node server on :3000).
+server {
+  listen 443 ssl;
+  http2 on;
+  server_name ${LANDING_DOMAIN};
+  include /etc/nginx/snippets/ssl.conf;
+
+  access_log /dev/stdout proxy_json;
+  error_log  /dev/stderr;
+
+  location / {
+    include /etc/nginx/snippets/proxy_headers.conf;
+    proxy_pass http://landing:3000;
+  }
+}

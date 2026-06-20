@@ -90,6 +90,9 @@ services:
       - REDIS_URL=redis://redis:6379
       - MINIO_ENDPOINT=http://minio:9000
       - SENTRY_RELEASE=${SENTRY_RELEASE:-dev}
+      # Frontend lives on a different subdomain than the API -> credentialed CORS.
+      # Prod must override (comma-separated origins) in packages/infra/.env.
+      - CORS_ORIGINS=${CORS_ORIGINS:-https://dev-app.trello-clone.shop}
     expose:
       - "4000"
       - "9464" # OTel Prometheus metrics
@@ -116,10 +119,55 @@ services:
     restart: unless-stopped
     depends_on:
       - backend
-    ports:
-      - "8080:80"
+    # No host port: reached only via the proxy on the internal network.
+    expose:
+      - "80"
     labels:
       com.project.service: frontend
+      com.project.env: ${VPS_ENV:-prod}
+
+  # Public SEO/landing site (Next.js, node server). Internal only; via proxy.
+  landing:
+    build:
+      context: ../..
+      dockerfile: packages/infra/landing.Dockerfile
+      args:
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://dev-app.trello-clone.shop}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://dev.trello-clone.shop}
+    container_name: trelloclone3-landing
+    restart: unless-stopped
+    expose:
+      - "3000"
+    labels:
+      com.project.service: landing
+      com.project.env: ${VPS_ENV:-prod}
+
+  # Edge reverse proxy + TLS terminator. The ONLY service publishing host ports
+  # (80/443). Cloudflare fronts it; it serves a Cloudflare Origin CA cert.
+  proxy:
+    image: nginx:1.27-alpine
+    container_name: trelloclone3-proxy
+    restart: unless-stopped
+    depends_on:
+      - frontend
+      - backend
+      - landing
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      # Per-tier domains; override in packages/infra/.env for prod.
+      APP_DOMAIN: ${APP_DOMAIN:-dev-app.trello-clone.shop}
+      API_DOMAIN: ${API_DOMAIN:-dev-api.trello-clone.shop}
+      LANDING_DOMAIN: ${LANDING_DOMAIN:-dev.trello-clone.shop}
+      # Only substitute *DOMAIN* vars; leave $host, $remote_addr, etc. intact.
+      NGINX_ENVSUBST_FILTER: DOMAIN
+    volumes:
+      - ./proxy/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./proxy/snippets:/etc/nginx/snippets:ro
+      - ./certs:/etc/nginx/certs:ro
+    labels:
+      com.project.service: proxy
       com.project.env: ${VPS_ENV:-prod}
 
   loki:
@@ -178,8 +226,10 @@ services:
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
       - ./grafana/alerting:/etc/grafana/provisioning/alerting:ro
       - grafanadata:/var/lib/grafana
+    # Loopback-only: not publicly exposed. Reach via SSH tunnel:
+    #   ssh -L 3000:127.0.0.1:3000 trello-dev-vps  -> http://localhost:3000
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     depends_on:
       - loki
       - tempo

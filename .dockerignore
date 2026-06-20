@@ -1,0 +1,13 @@
+# Builds run a filtered pnpm install inside the image; never copy host/VPS
+# node_modules or build artifacts into the build context.
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/coverage
+**/test-results
+**/.vite
+.git
+.github
+e2e
+**/*.log

@@ -3,6 +3,7 @@ import "./tracing.js";
 import "./sentry.js";
 
 import express, { type RequestHandler } from "express";
+import cors from "cors";
 import helmet from "helmet";
 import pinoHttp from "pino-http";
 import swaggerUi from "swagger-ui-express";
@@ -60,6 +61,15 @@ app.use(
 );
 
 app.use(helmet());
+
+// Credentialed CORS for the frontend when it lives on a different subdomain than
+// the API. Only the configured origins are reflected, so a forged cross-site
+// request from any other origin still fails the preflight (the x-requested-with
+// CSRF marker can't be set without an allowed CORS preflight). Empty list ->
+// same-origin deploy, no CORS.
+if (env.CORS_ORIGINS.length) {
+  app.use(cors({ origin: env.CORS_ORIGINS, credentials: true }));
+}
 
 // Liveness + readiness (no CSRF/JSON needed); /metrics for Prometheus over the
 // internal network only - nginx must not expose it publicly.

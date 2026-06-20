@@ -11,6 +11,7 @@ const MESSAGES: Record<AuthError, string> = {
   [AuthError.ACCOUNT_LOCKED]: "Account temporarily locked. Try again later.",
   [AuthError.INVALID_REFRESH_TOKEN]: "Your session expired. Please log in again.",
   [AuthError.RATE_LIMITED]: "Too many requests. Please wait and try again.",
+  [AuthError.EMAIL_SEND_FAILED]: "Couldn't send the email. Please try again.",
   [AuthError.SESSION_EXPIRED]: "Your session expired. Please log in again.",
 };
 
