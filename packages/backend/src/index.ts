@@ -22,6 +22,24 @@ const app = express();
 // Docs are served only on local; never on a deployed tier (auth attack surface).
 const showDocs = env.isLocal;
 
+// tRPC catches handler throws and serializes them into the 500 response, so
+// pino-http only sees a generic "status 500". Surface the real error (e.g. an
+// SMTP failure) to Loki + Sentry, tagged with the active traceId, so it is
+// queryable. Only server faults are reported; expected 4xx stay quiet.
+function reportTrpcError(opts: {
+  error: { code: string; message: string; cause?: unknown };
+  path?: string;
+  type: string;
+}): void {
+  if (opts.error.code !== "INTERNAL_SERVER_ERROR") return;
+  const cause = opts.error.cause;
+  logger.error(
+    { err: opts.error, cause, path: opts.path, type: opts.type },
+    "trpc internal error",
+  );
+  if (sentryEnabled) Sentry.captureException(cause ?? opts.error);
+}
+
 // Trust the single reverse-proxy hop (nginx) so req.ip is the real client IP
 // for rate limiting, not the proxy address.
 app.set("trust proxy", 1);
@@ -66,14 +84,14 @@ app.use("/api", clientLogRouter);
 app.use(
   "/trpc",
   csrfGuard,
-  createExpressMiddleware({ router: appRouter, createContext }),
+  createExpressMiddleware({ router: appRouter, createContext, onError: reportTrpcError }),
 );
 
 // REST layer + OpenAPI/Swagger docs generated from the same router.
 app.use(
   "/api",
   express.json(),
-  createOpenApiExpressMiddleware({ router: appRouter, createContext: createContext as never }),
+  createOpenApiExpressMiddleware({ router: appRouter, createContext: createContext as never, onError: reportTrpcError as never }),
 );
 // Docs expose the full auth attack surface; never serve them on a deployed tier.
 if (showDocs) {
