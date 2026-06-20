@@ -1,5 +1,5 @@
 # Single-binary Loki. Index on local disk (tsdb), chunks in Minio (restart-safe).
-# ${MINIO_*} expand only because the container starts with -config.expand-env=true.
+# MINIO_* env vars expand only because the container starts with -config.expand-env=true.
 auth_enabled: false
 
 server:
