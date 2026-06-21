@@ -152,6 +152,8 @@ export async function loadAttachmentFor(
   return { row, perm };
 }
 
+// Deleting a cover attachment auto-clears any card.cover_attachment_id pointing
+// at it via the FK (ON DELETE SET NULL, migration 015). No explicit clear here.
 export async function deleteAttachment(
   db: Db,
   storage: Storage,

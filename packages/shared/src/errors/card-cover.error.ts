@@ -1,0 +1,9 @@
+export const CardCoverError = {
+  INVALID_COVER_COLOR: "INVALID_COVER_COLOR",
+  COVER_ATTACHMENT_NOT_FOUND: "COVER_ATTACHMENT_NOT_FOUND",
+  COVER_NOT_IMAGE: "COVER_NOT_IMAGE",
+  COVER_CONFLICT: "COVER_CONFLICT",
+  CARD_NOT_FOUND: "CARD_NOT_FOUND",
+  FORBIDDEN: "FORBIDDEN",
+} as const;
+export type CardCoverError = (typeof CardCoverError)[keyof typeof CardCoverError];

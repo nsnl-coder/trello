@@ -2,11 +2,15 @@ import { TRPCError } from "@trpc/server";
 import {
   BoardError,
   type Card,
+  CardCoverError,
+  COVER_IMAGE_MIME,
   type CreateCardInput,
   type ListDueCardsInput,
   type MoveCardInput,
   type UpdateCardInput,
 } from "shared";
+import * as attachmentRepo from "../attachment/attachment.repo.js";
+import type { AttachmentRow } from "../attachment/attachment.repo.js";
 import type { CtxUser } from "../board/board.service.js";
 import { loadBoardFor } from "../board/board.service.js";
 import { logger } from "../../logger.js";
@@ -30,6 +34,10 @@ function columnNotFound() {
     code: "NOT_FOUND",
     message: BoardError.COLUMN_NOT_FOUND,
   });
+}
+
+function coverErr(code: CardCoverError, status: TRPCError["code"]): TRPCError {
+  return new TRPCError({ code: status, message: code });
 }
 
 function invalidDueRange() {
@@ -104,6 +112,8 @@ export async function updateCard(
     due_at?: Date | null;
     reminder_minutes?: number | null;
     reminder_sent_at?: Date | null;
+    cover_color?: string | null;
+    cover_attachment_id?: string | null;
   } = {};
   if (patch.title !== undefined) dbPatch.title = patch.title;
   if (patch.description !== undefined) dbPatch.description = patch.description;
@@ -115,9 +125,50 @@ export async function updateCard(
     dbPatch.due_at = patch.dueAt;
     dbPatch.reminder_sent_at = null;
   }
+  await applyCoverPatch(db, id, patch, dbPatch);
   const updated = await repo.updateCard(db, id, dbPatch);
   if (!updated) throw cardNotFound();
   return enrichCard(db, updated as CardRow);
+}
+
+// Map the cover tri-state fields onto dbPatch, enforcing mutual exclusion and
+// validating an image cover against the SAME card's image attachments.
+async function applyCoverPatch(
+  db: Db,
+  cardId: string,
+  patch: UpdateCardInput,
+  dbPatch: { cover_color?: string | null; cover_attachment_id?: string | null },
+): Promise<void> {
+  const hasColor = patch.coverColor != null;
+  const hasImage = patch.coverAttachmentId != null;
+  if (hasColor && hasImage) {
+    throw coverErr(CardCoverError.COVER_CONFLICT, "BAD_REQUEST");
+  }
+  if (patch.coverColor !== undefined) {
+    if (patch.coverColor != null) {
+      dbPatch.cover_color = patch.coverColor;
+      dbPatch.cover_attachment_id = null;
+    } else {
+      dbPatch.cover_color = null;
+    }
+  }
+  if (patch.coverAttachmentId !== undefined) {
+    if (patch.coverAttachmentId != null) {
+      const att = (await attachmentRepo.findById(db, patch.coverAttachmentId)) as
+        | AttachmentRow
+        | undefined;
+      if (!att || att.card_id !== cardId) {
+        throw coverErr(CardCoverError.COVER_ATTACHMENT_NOT_FOUND, "NOT_FOUND");
+      }
+      if (!(COVER_IMAGE_MIME as readonly string[]).includes(att.mime_type)) {
+        throw coverErr(CardCoverError.COVER_NOT_IMAGE, "BAD_REQUEST");
+      }
+      dbPatch.cover_attachment_id = patch.coverAttachmentId;
+      dbPatch.cover_color = null;
+    } else {
+      dbPatch.cover_attachment_id = null;
+    }
+  }
 }
 
 export async function listDueCards(

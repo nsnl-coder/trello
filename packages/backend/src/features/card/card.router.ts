@@ -32,7 +32,7 @@ export const cardsRouter = router({
     .mutation(({ ctx, input }) => card.createCard(ctx.db, user(ctx), input)),
 
   update: protectedProcedure
-    .meta({ openapi: { method: "PATCH", path: "/cards/{id}", tags: ["cards"], protect: true, summary: "Update a card" } })
+    .meta({ openapi: { method: "PATCH", path: "/cards/{id}", tags: ["cards"], protect: true, summary: "Update a card (cover, markdown desc)" } })
     .input(idInput.merge(updateCardInput))
     .output(cardSchema)
     .mutation(({ ctx, input }) => {

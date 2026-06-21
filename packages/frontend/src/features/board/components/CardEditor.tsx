@@ -1,17 +1,21 @@
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
-  CARD_DESCRIPTION_MAX,
   CARD_TITLE_MAX,
   CARD_TITLE_MIN,
   type Card,
 } from "shared";
 import { Modal } from "../../../components/Modal";
+import { useTRPC } from "../../../lib/trpc";
 import { ChecklistSection } from "./ChecklistSection";
 import { LabelPicker } from "./LabelPicker";
 import { AssigneePicker } from "./AssigneePicker";
 import { DueDatePicker } from "./DueDatePicker";
 import { CommentList } from "./CommentList";
 import { AttachmentList } from "./AttachmentList";
+import { CardCoverBanner } from "./CardCoverBanner";
+import { CardCoverPicker } from "./CardCoverPicker";
+import { DescriptionEditor } from "./DescriptionEditor";
 import type { MentionMember } from "../utils";
 
 interface Props {
@@ -41,8 +45,14 @@ export function CardEditor({
   onDelete,
   onClose,
 }: Props) {
+  const trpc = useTRPC();
   const [title, setTitle] = useState(card.title);
   const [description, setDescription] = useState(card.description ?? "");
+
+  const attachmentsQuery = useQuery(trpc.attachments.list.queryOptions({ cardId: card.id }));
+  const imageAttachments = (attachmentsQuery.data ?? []).filter((a) =>
+    a.mimeType.startsWith("image/"),
+  );
 
   useEffect(() => {
     setTitle(card.title);
@@ -60,6 +70,7 @@ export function CardEditor({
   return (
     <Modal open onClose={onClose} title={editable ? "Edit card" : "Card"} widthClassName="max-w-lg">
       <div>
+        <CardCoverBanner cover={card.cover} />
         <div className="flex flex-col gap-1">
           <label htmlFor="card-title" className="text-sm font-medium text-slate-700">
             Title
@@ -81,14 +92,10 @@ export function CardEditor({
           <label htmlFor="card-description" className="text-sm font-medium text-slate-700">
             Description
           </label>
-          <textarea
-            id="card-description"
-            rows={4}
+          <DescriptionEditor
             value={description}
-            disabled={!editable}
-            maxLength={CARD_DESCRIPTION_MAX}
-            onChange={(e) => setDescription(e.target.value)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 disabled:bg-slate-100"
+            onChange={setDescription}
+            editable={editable}
           />
         </div>
 
@@ -120,6 +127,14 @@ export function CardEditor({
           canEdit={editable}
           currentUserId={currentUserId}
           isOwner={isOwner}
+        />
+
+        <CardCoverPicker
+          boardId={boardId}
+          cardId={card.id}
+          cover={card.cover}
+          attachments={imageAttachments}
+          editable={editable}
         />
 
         <CommentList
