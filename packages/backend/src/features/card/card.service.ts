@@ -3,24 +3,16 @@ import {
   BoardError,
   type Card,
   type CreateCardInput,
+  type ListDueCardsInput,
   type MoveCardInput,
   type UpdateCardInput,
 } from "shared";
 import type { CtxUser } from "../board/board.service.js";
 import { loadBoardFor } from "../board/board.service.js";
 import { computePosition } from "../column/column.service.js";
+import { type CardRow, enrichCard, enrichCards } from "./card.enrich.js";
 import * as repo from "./card.repo.js";
 import type { Db } from "./card.repo.js";
-
-type CardRow = {
-  id: string;
-  column_id: string;
-  title: string;
-  description: string | null;
-  position: number;
-  created_at: Date;
-  updated_at: Date;
-};
 
 type ColumnRow = {
   id: string;
@@ -38,16 +30,11 @@ function columnNotFound() {
   });
 }
 
-function toCard(row: CardRow): Card {
-  return {
-    id: row.id,
-    columnId: row.column_id,
-    title: row.title,
-    description: row.description,
-    position: row.position,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
+function invalidDueRange() {
+  return new TRPCError({
+    code: "BAD_REQUEST",
+    message: BoardError.INVALID_DUE_RANGE,
+  });
 }
 
 async function enforceBoard(
@@ -99,7 +86,7 @@ export async function createCard(
     description: input.description ?? null,
     position: max + 1,
   });
-  return toCard(row as CardRow);
+  return enrichCard(db, row as CardRow);
 }
 
 export async function updateCard(
@@ -109,9 +96,44 @@ export async function updateCard(
   patch: UpdateCardInput,
 ): Promise<Card> {
   await loadCardFor(db, user, id, "edit");
-  const updated = await repo.updateCard(db, id, patch);
+  const dbPatch: {
+    title?: string;
+    description?: string | null;
+    due_at?: Date | null;
+    reminder_minutes?: number | null;
+    reminder_sent_at?: Date | null;
+  } = {};
+  if (patch.title !== undefined) dbPatch.title = patch.title;
+  if (patch.description !== undefined) dbPatch.description = patch.description;
+  if (patch.reminderMinutes !== undefined) {
+    dbPatch.reminder_minutes = patch.reminderMinutes;
+  }
+  // Changing the due date resets a prior reminder so it can fire again.
+  if (patch.dueAt !== undefined) {
+    dbPatch.due_at = patch.dueAt;
+    dbPatch.reminder_sent_at = null;
+  }
+  const updated = await repo.updateCard(db, id, dbPatch);
   if (!updated) throw cardNotFound();
-  return toCard(updated as CardRow);
+  return enrichCard(db, updated as CardRow);
+}
+
+export async function listDueCards(
+  db: Db,
+  user: CtxUser,
+  input: ListDueCardsInput,
+): Promise<Card[]> {
+  if (input.from.getTime() > input.to.getTime()) throw invalidDueRange();
+  await enforceBoard(db, user, input.boardId, "view", () =>
+    new TRPCError({ code: "NOT_FOUND", message: BoardError.BOARD_NOT_FOUND }),
+  );
+  const rows = (await repo.listDueCards(
+    db,
+    input.boardId,
+    input.from,
+    input.to,
+  )) as CardRow[];
+  return enrichCards(db, rows);
 }
 
 export async function deleteCard(
@@ -150,5 +172,5 @@ export async function moveCard(
   );
   const updated = await repo.setPosition(db, id, input.toColumnId, position);
   if (!updated) throw cardNotFound();
-  return toCard(updated as CardRow);
+  return enrichCard(db, updated as CardRow);
 }

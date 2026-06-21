@@ -16,5 +16,6 @@ export const LogEvent = {
   BackupDriveDisconnected: "backup.drive.disconnected",
   SuperAdminSeeded: "superadmin.seeded",
   SuperAdminSeedSkipped: "superadmin.seed.skipped",
+  CardReminderSent: "card.reminder.sent",
 } as const;
 export type LogEvent = (typeof LogEvent)[keyof typeof LogEvent];

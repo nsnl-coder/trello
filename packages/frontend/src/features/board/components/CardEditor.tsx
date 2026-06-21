@@ -6,10 +6,19 @@ import {
   type Card,
 } from "shared";
 import { Modal } from "../../../components/Modal";
+import { ChecklistSection } from "./ChecklistSection";
+import { LabelPicker } from "./LabelPicker";
+import { DueDatePicker } from "./DueDatePicker";
+import { CommentList } from "./CommentList";
+import type { MentionMember } from "../utils";
 
 interface Props {
   card: Card;
+  boardId: string;
   editable: boolean;
+  isOwner: boolean;
+  currentUserId: string;
+  members: MentionMember[];
   error?: unknown;
   errorMessage?: (err: unknown) => string;
   onSave: (values: { title: string; description: string | null }) => void;
@@ -19,7 +28,11 @@ interface Props {
 
 export function CardEditor({
   card,
+  boardId,
   editable,
+  isOwner,
+  currentUserId,
+  members,
   error,
   errorMessage,
   onSave,
@@ -43,7 +56,7 @@ export function CardEditor({
   };
 
   return (
-    <Modal open onClose={onClose} title={editable ? "Edit card" : "Card"} widthClassName="max-w-md">
+    <Modal open onClose={onClose} title={editable ? "Edit card" : "Card"} widthClassName="max-w-lg">
       <div>
         <div className="flex flex-col gap-1">
           <label htmlFor="card-title" className="text-sm font-medium text-slate-700">
@@ -80,6 +93,26 @@ export function CardEditor({
         {error && errorMessage ? (
           <p className="mt-2 text-sm text-red-600">{errorMessage(error)}</p>
         ) : null}
+
+        <LabelPicker
+          boardId={boardId}
+          cardId={card.id}
+          labels={card.labels}
+          editable={editable}
+        />
+
+        <DueDatePicker boardId={boardId} card={card} editable={editable} />
+
+        <ChecklistSection cardId={card.id} editable={editable} />
+
+        <CommentList
+          boardId={boardId}
+          cardId={card.id}
+          editable={editable}
+          members={members}
+          currentUserId={currentUserId}
+          isOwner={isOwner}
+        />
 
         <div className="mt-4 flex items-center justify-between gap-2">
           {editable ? (

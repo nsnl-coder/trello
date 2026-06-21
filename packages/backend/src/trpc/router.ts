@@ -6,6 +6,9 @@ import { projectsRouter } from "../features/project/project.router.js";
 import { boardsRouter } from "../features/board/board.router.js";
 import { columnsRouter } from "../features/column/column.router.js";
 import { cardsRouter } from "../features/card/card.router.js";
+import { labelsRouter } from "../features/label/label.router.js";
+import { checklistsRouter, checklistItemsRouter } from "../features/checklist/checklist.router.js";
+import { commentsRouter } from "../features/comment/comment.router.js";
 import { backupRouter } from "../features/backup/backup.router.js";
 
 export const appRouter = router({
@@ -16,6 +19,10 @@ export const appRouter = router({
   boards: boardsRouter,
   columns: columnsRouter,
   cards: cardsRouter,
+  labels: labelsRouter,
+  checklists: checklistsRouter,
+  checklistItems: checklistItemsRouter,
+  comments: commentsRouter,
   backup: backupRouter,
 });
 

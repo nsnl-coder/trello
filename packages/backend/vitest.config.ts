@@ -5,6 +5,9 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     setupFiles: ["./src/test.setup.ts"],
+    // bcrypt + real-timing auth tests can exceed the 5s default under the
+    // CPU contention of the full parallel suite.
+    testTimeout: 20_000,
     env: {
       NODE_ENV: "test",
       JWT_ACCESS_SECRET: "test_access_secret_0123456789abcdef0123456789",
