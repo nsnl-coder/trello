@@ -1,6 +1,10 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Card } from "shared";
+import { ChecklistProgressBadge } from "./ChecklistProgressBadge";
+import { LabelBadge } from "./LabelBadge";
+import { DueDateBadge } from "./DueDateBadge";
+import { CommentCountBadge } from "./CommentCountBadge";
 
 interface Props {
   card: Card;
@@ -34,7 +38,17 @@ export function CardTile({ card, editable, onOpen }: Props) {
         editable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
       }`}
     >
+      {card.labels.length > 0 ? (
+        <div className="mb-1.5 flex flex-wrap gap-1">
+          {card.labels.map((label) => (
+            <LabelBadge key={label.id} label={label} compact />
+          ))}
+        </div>
+      ) : null}
       {card.title}
+      <DueDateBadge card={card} />
+      <ChecklistProgressBadge progress={card.checklistProgress} />
+      <CommentCountBadge count={card.commentCount} />
     </div>
   );
 }

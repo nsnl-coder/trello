@@ -123,8 +123,59 @@ export interface CardsTable {
   title: string;
   description: string | null;
   position: number;
+  due_at: Timestamp | null;
+  reminder_minutes: number | null;
+  reminder_sent_at: Timestamp | null;
   created_at: GeneratedTimestamp;
   updated_at: GeneratedTimestamp;
+}
+
+export interface LabelsTable {
+  id: Generated<string>;
+  board_id: string;
+  name: string;
+  color: string;
+  created_at: GeneratedTimestamp;
+  updated_at: GeneratedTimestamp;
+}
+
+export interface CardLabelsTable {
+  card_id: string;
+  label_id: string;
+}
+
+export interface ChecklistsTable {
+  id: Generated<string>;
+  card_id: string;
+  title: string;
+  position: number;
+  created_at: GeneratedTimestamp;
+  updated_at: GeneratedTimestamp;
+}
+
+export interface ChecklistItemsTable {
+  id: Generated<string>;
+  checklist_id: string;
+  text: string;
+  is_done: Generated<boolean>;
+  position: number;
+  created_at: GeneratedTimestamp;
+  updated_at: GeneratedTimestamp;
+}
+
+export interface CommentsTable {
+  id: Generated<string>;
+  card_id: string;
+  author_id: string;
+  parent_id: string | null;
+  body: string;
+  created_at: GeneratedTimestamp;
+  updated_at: GeneratedTimestamp;
+}
+
+export interface CommentMentionsTable {
+  comment_id: string;
+  user_id: string;
 }
 
 export interface BackupSettingsTable {
@@ -176,6 +227,12 @@ export interface Database {
   board_access: BoardAccessTable;
   columns: ColumnsTable;
   cards: CardsTable;
+  labels: LabelsTable;
+  card_labels: CardLabelsTable;
+  checklists: ChecklistsTable;
+  checklist_items: ChecklistItemsTable;
+  comments: CommentsTable;
+  comment_mentions: CommentMentionsTable;
   backup_settings: BackupSettingsTable;
   backup_runs: BackupRunsTable;
 }

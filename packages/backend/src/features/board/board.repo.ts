@@ -82,6 +82,8 @@ export function listCardsForBoard(db: Db, boardId: string) {
       "cards.title as title",
       "cards.description as description",
       "cards.position as position",
+      "cards.due_at as due_at",
+      "cards.reminder_minutes as reminder_minutes",
       "cards.created_at as created_at",
       "cards.updated_at as updated_at",
     ])

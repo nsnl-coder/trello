@@ -6,6 +6,13 @@ export interface EmailPort {
   sendVerifyOtp(to: string, code: string): Promise<void>;
   sendResetOtp(to: string, code: string): Promise<void>;
   sendAccountLocked(to: string): Promise<void>;
+  sendCardDueSoon(to: string, cardTitle: string, link: string): Promise<void>;
+  sendCommentMention(
+    to: string,
+    cardTitle: string,
+    snippet: string,
+    link: string,
+  ): Promise<void>;
 }
 
 function render(template: string): string {
@@ -46,6 +53,22 @@ export function otpTemplate(title: string, intro: string, code: string): string 
   `);
 }
 
+function noticeTemplate(title: string, body: string, link: string): string {
+  return render(`
+    <mjml>
+      <mj-body>
+        <mj-section>
+          <mj-column>
+            <mj-text font-size="20px" font-weight="bold">${esc(title)}</mj-text>
+            <mj-text>${esc(body)}</mj-text>
+            <mj-button href="${esc(link)}">Open card</mj-button>
+          </mj-column>
+        </mj-section>
+      </mj-body>
+    </mjml>
+  `);
+}
+
 function lockedTemplate(): string {
   return render(`
     <mjml>
@@ -77,6 +100,26 @@ export function createEmailService(): EmailPort {
     sendResetOtp: (to, code) =>
       send(to, "Reset your password", otpTemplate("Reset your password", "Use this code to reset your password:", code)),
     sendAccountLocked: (to) => send(to, "Account locked", lockedTemplate()),
+    sendCardDueSoon: (to, cardTitle, link) =>
+      send(
+        to,
+        `Card due soon: ${cardTitle}`,
+        noticeTemplate(
+          "A card is due soon",
+          `"${cardTitle}" is due soon.`,
+          link,
+        ),
+      ),
+    sendCommentMention: (to, cardTitle, snippet, link) =>
+      send(
+        to,
+        `You were mentioned on: ${cardTitle}`,
+        noticeTemplate(
+          "You were mentioned",
+          `On "${cardTitle}": ${snippet}`,
+          link,
+        ),
+      ),
   };
 }
 
