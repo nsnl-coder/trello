@@ -126,6 +126,8 @@ export interface CardsTable {
   due_at: Timestamp | null;
   reminder_minutes: number | null;
   reminder_sent_at: Timestamp | null;
+  cover_color: string | null;
+  cover_attachment_id: string | null;
   created_at: GeneratedTimestamp;
   updated_at: GeneratedTimestamp;
 }

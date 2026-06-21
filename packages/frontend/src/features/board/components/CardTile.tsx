@@ -7,6 +7,7 @@ import { DueDateBadge } from "./DueDateBadge";
 import { CommentCountBadge } from "./CommentCountBadge";
 import { AttachmentCountBadge } from "./AttachmentCountBadge";
 import { AssigneeStack } from "./AssigneeStack";
+import { CardCoverStrip } from "./CardCoverStrip";
 
 interface Props {
   card: Card;
@@ -36,27 +37,30 @@ export function CardTile({ card, editable, onOpen }: Props) {
       onKeyDown={(e) => {
         if (e.key === "Enter") onOpen(card);
       }}
-      className={`rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm ${
+      className={`overflow-hidden rounded-lg border border-slate-200 bg-white text-sm text-slate-700 shadow-sm ${
         editable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
       }`}
     >
-      {card.labels.length > 0 ? (
-        <div className="mb-1.5 flex flex-wrap gap-1">
-          {card.labels.map((label) => (
-            <LabelBadge key={label.id} label={label} compact />
-          ))}
-        </div>
-      ) : null}
-      {card.title}
-      <DueDateBadge card={card} />
-      <ChecklistProgressBadge progress={card.checklistProgress} />
-      <CommentCountBadge count={card.commentCount} />
-      <AttachmentCountBadge count={card.attachmentCount} />
-      {card.assignees?.length ? (
-        <div className="mt-1.5">
-          <AssigneeStack assignees={card.assignees} />
-        </div>
-      ) : null}
+      <CardCoverStrip cover={card.cover} />
+      <div className="px-3 py-2">
+        {card.labels.length > 0 ? (
+          <div className="mb-1.5 flex flex-wrap gap-1">
+            {card.labels.map((label) => (
+              <LabelBadge key={label.id} label={label} compact />
+            ))}
+          </div>
+        ) : null}
+        {card.title}
+        <DueDateBadge card={card} />
+        <ChecklistProgressBadge progress={card.checklistProgress} />
+        <CommentCountBadge count={card.commentCount} />
+        <AttachmentCountBadge count={card.attachmentCount} />
+        {card.assignees?.length ? (
+          <div className="mt-1.5">
+            <AssigneeStack assignees={card.assignees} />
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

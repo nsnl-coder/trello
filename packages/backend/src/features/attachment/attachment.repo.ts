@@ -67,6 +67,22 @@ export async function listKeysByCard(db: Db, cardId: string): Promise<string[]> 
   return rows.map((r) => r.storage_key);
 }
 
+// Batch-fetch attachments by id, keyed by id (for cover enrichment, no N+1).
+export async function findByIds(
+  db: Db,
+  ids: string[],
+): Promise<Map<string, AttachmentRow>> {
+  const out = new Map<string, AttachmentRow>();
+  if (ids.length === 0) return out;
+  const rows = (await db
+    .selectFrom("attachments")
+    .selectAll()
+    .where("id", "in", ids)
+    .execute()) as AttachmentRow[];
+  for (const r of rows) out.set(r.id, r);
+  return out;
+}
+
 // Batch attachment counts for a set of cards, for board getData (no N+1).
 export async function countByCards(db: Db, cardIds: string[]): Promise<Map<string, number>> {
   const out = new Map<string, number>();

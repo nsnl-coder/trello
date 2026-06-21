@@ -1,4 +1,4 @@
-import type { Card, Label } from "shared";
+import { type Card, type CardCover, COVER_IMAGE_MIME, type Label } from "shared";
 import * as labelRepo from "../label/label.repo.js";
 import * as checklistRepo from "../checklist/checklist.repo.js";
 import * as commentRepo from "../comment/comment.repo.js";
@@ -14,6 +14,8 @@ export type CardRow = {
   position: number;
   due_at: Date | null;
   reminder_minutes: number | null;
+  cover_color: string | null;
+  cover_attachment_id: string | null;
   created_at: Date;
   updated_at: Date;
 };
@@ -52,6 +54,31 @@ export async function enrichCards(
   const attCounts = await attachmentRepo.countByCards(db, ids);
   const assigneesByCard = await assigneeRepo.listForCards(db, ids);
 
+  // Resolve image covers in ONE batched query; color-only/no-cover boards add zero.
+  const coverAttachmentIds = [
+    ...new Set(
+      rows
+        .map((r) => r.cover_attachment_id)
+        .filter((id): id is string => id != null),
+    ),
+  ];
+  const coverAttachments = await attachmentRepo.findByIds(db, coverAttachmentIds);
+
+  const resolveCover = (r: CardRow): CardCover | null => {
+    if (r.cover_color != null) return { type: "color", color: r.cover_color as any };
+    if (r.cover_attachment_id != null) {
+      const att = coverAttachments.get(r.cover_attachment_id);
+      if (att && (COVER_IMAGE_MIME as readonly string[]).includes(att.mime_type)) {
+        return {
+          type: "image",
+          attachmentId: att.id,
+          downloadUrl: `/api/attachments/${att.id}/download`,
+        };
+      }
+    }
+    return null;
+  };
+
   return rows.map((r) => ({
     id: r.id,
     columnId: r.column_id,
@@ -61,6 +88,7 @@ export async function enrichCards(
     dueAt: r.due_at,
     reminderMinutes: r.reminder_minutes,
     isOverdue: isOverdue(r.due_at, now),
+    cover: resolveCover(r),
     labels: labelsByCard.get(r.id) ?? [],
     assignees: assigneesByCard.get(r.id) ?? [],
     checklistProgress: progress.get(r.id) ?? { done: 0, total: 0 },

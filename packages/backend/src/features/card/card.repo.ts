@@ -58,6 +58,8 @@ export function updateCard(
     due_at?: Date | null;
     reminder_minutes?: number | null;
     reminder_sent_at?: Date | null;
+    cover_color?: string | null;
+    cover_attachment_id?: string | null;
   },
 ) {
   return db

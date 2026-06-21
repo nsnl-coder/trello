@@ -20,5 +20,6 @@ export * from "./errors/label.error.js";
 export * from "./errors/checklist.error.js";
 export * from "./errors/comment.error.js";
 export * from "./errors/assignee.error.js";
+export * from "./errors/card-cover.error.js";
 export * from "./errors/attachment.error.js";
 export * from "./errors/backup.error.js";
