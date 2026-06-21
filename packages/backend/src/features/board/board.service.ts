@@ -11,6 +11,7 @@ import {
   type RevokeBoardAccessInput,
   type UpdateBoardInput,
 } from "shared";
+import { type CardRow, enrichCards } from "../card/card.enrich.js";
 import * as repo from "./board.repo.js";
 import type { Db } from "./board.repo.js";
 
@@ -139,18 +140,11 @@ export async function getBoardData(
   const { row, perm } = await loadBoardFor(db, user, id, "view");
   const columns = await repo.listColumnsForBoard(db, id);
   const cards = await repo.listCardsForBoard(db, id);
+  const enriched = await enrichCards(db, cards as CardRow[]);
   const byColumn = new Map<string, BoardData["columns"][number]["cards"]>();
   for (const col of columns) byColumn.set(col.id, []);
-  for (const c of cards) {
-    byColumn.get(c.column_id)?.push({
-      id: c.id,
-      columnId: c.column_id,
-      title: c.title,
-      description: c.description,
-      position: c.position,
-      createdAt: c.created_at,
-      updatedAt: c.updated_at,
-    });
+  for (const c of enriched) {
+    byColumn.get(c.columnId)?.push(c);
   }
   return {
     ...toBoard(row, perm),

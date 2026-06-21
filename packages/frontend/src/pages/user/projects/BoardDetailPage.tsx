@@ -9,18 +9,21 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { SortableContext, horizontalListSortingStrategy } from "@dnd-kit/sortable";
-import { ArrowLeft, Pencil, Trash2, Plus, Users, Maximize2, Minimize2 } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, Plus, Users, Maximize2, Minimize2, Tag } from "lucide-react";
 import {
   COLUMN_NAME_MAX,
   type BoardData,
   type Card,
 } from "shared";
 import { useTRPC } from "../../../lib/trpc";
+import { useAuthStore } from "../../../hooks/useAuthStore";
 import { Modal } from "../../../components/Modal";
 import { Column } from "../../../features/board/components/Column";
 import { CardEditor } from "../../../features/board/components/CardEditor";
 import { BoardAccessPanel } from "../../../features/board/components/BoardAccessPanel";
-import { canEdit, isOwner, sortByPosition } from "../../../features/board/utils";
+import { LabelManager } from "../../../features/board/components/LabelManager";
+import { LabelFilterBar } from "../../../features/board/components/LabelFilterBar";
+import { canEdit, isOwner, sortByPosition, cardMatchesLabels, type MentionMember } from "../../../features/board/utils";
 import { boardErrorMessage } from "../../../features/board/errors";
 
 // Reorder neighbours: midpoint between the surrounding positions. Mirrors the
@@ -40,7 +43,10 @@ export function BoardDetailPage() {
   const { id, boardId } = useParams<{ id: string; boardId: string }>();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showAccess, setShowAccess] = useState(false);
-  const [activeCard, setActiveCard] = useState<Card | null>(null);
+  const [showLabels, setShowLabels] = useState(false);
+  const [labelFilter, setLabelFilter] = useState<string[]>([]);
+  const [activeCardId, setActiveCardId] = useState<string | null>(null);
+  const currentUser = useAuthStore((s) => s.user);
   // Full-width by default; only "fit" is an explicit opt-out stored as "0".
   const [wide, setWide] = useState(() => localStorage.getItem("boardWide") !== "0");
 
@@ -52,6 +58,11 @@ export function BoardDetailPage() {
 
   const dataQuery = useQuery(trpc.boards.getData.queryOptions({ id: boardId! }));
   const board = dataQuery.data;
+
+  const accessQuery = useQuery(trpc.boards.accessList.queryOptions({ id: boardId! }));
+  const members: MentionMember[] = (accessQuery.data ?? []).map((a) => ({
+    name: a.email.split("@")[0],
+  }));
 
   const dataKey = trpc.boards.getData.queryKey({ id: boardId! });
   const setData = (updater: (d: BoardData) => BoardData) =>
@@ -115,6 +126,8 @@ export function BoardDetailPage() {
 
   const editable = canEdit(board);
   const columns = sortByPosition(board.columns);
+  const activeCard =
+    columns.flatMap((c) => c.cards).find((c) => c.id === activeCardId) ?? null;
 
   const addColumn = () => {
     const name = window.prompt("Column name")?.trim();
@@ -279,6 +292,16 @@ export function BoardDetailPage() {
                 Edit
               </Link>
             ) : null}
+            {editable ? (
+              <button
+                type="button"
+                onClick={() => setShowLabels(true)}
+                className="flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-100"
+              >
+                <Tag className="h-4 w-4" />
+                Manage labels
+              </button>
+            ) : null}
             {isOwner(board) ? (
               <button
                 type="button"
@@ -306,6 +329,10 @@ export function BoardDetailPage() {
           <p className="mt-4 text-sm text-slate-600">{board.description}</p>
         ) : null}
 
+        <div className="mt-4">
+          <LabelFilterBar boardId={board.id} selected={labelFilter} onChange={setLabelFilter} />
+        </div>
+
         <DndContext sensors={sensors} onDragEnd={onDragEnd}>
           <div className="mt-6 flex flex-1 items-start gap-4 overflow-x-auto pb-4">
             <SortableContext
@@ -315,7 +342,10 @@ export function BoardDetailPage() {
               {columns.map((column) => (
                 <Column
                   key={column.id}
-                  column={column}
+                  column={{
+                    ...column,
+                    cards: column.cards.filter((c) => cardMatchesLabels(c, labelFilter)),
+                  }}
                   editable={editable}
                   onRename={(name) =>
                     updateColumnMutation.mutate({ id: column.id, name })
@@ -324,7 +354,7 @@ export function BoardDetailPage() {
                   onAddCard={(title) =>
                     createCardMutation.mutate({ columnId: column.id, title })
                   }
-                  onOpenCard={setActiveCard}
+                  onOpenCard={(card) => setActiveCardId(card.id)}
                 />
               ))}
             </SortableContext>
@@ -355,10 +385,25 @@ export function BoardDetailPage() {
         </Modal>
       ) : null}
 
+      {editable ? (
+        <Modal
+          open={showLabels}
+          onClose={() => setShowLabels(false)}
+          title="Board labels"
+          widthClassName="max-w-md"
+        >
+          <LabelManager boardId={board.id} editable={editable} />
+        </Modal>
+      ) : null}
+
       {activeCard ? (
         <CardEditor
           card={activeCard}
+          boardId={board.id}
           editable={editable}
+          isOwner={isOwner(board)}
+          currentUserId={currentUser?.id ?? ""}
+          members={members}
           error={updateCardMutation.error ?? deleteCardMutation.error}
           errorMessage={boardErrorMessage}
           onSave={(values) =>
@@ -367,7 +412,7 @@ export function BoardDetailPage() {
               {
                 onSuccess: () => {
                   invalidateData();
-                  setActiveCard(null);
+                  setActiveCardId(null);
                 },
               },
             )
@@ -378,12 +423,12 @@ export function BoardDetailPage() {
               {
                 onSuccess: () => {
                   invalidateData();
-                  setActiveCard(null);
+                  setActiveCardId(null);
                 },
               },
             )
           }
-          onClose={() => setActiveCard(null)}
+          onClose={() => setActiveCardId(null)}
         />
       ) : null}
 
