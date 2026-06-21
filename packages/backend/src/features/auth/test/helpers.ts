@@ -15,6 +15,10 @@ import { up as up005 } from "../../../migrations/005.column.js";
 import { up as up006 } from "../../../migrations/006.card.js";
 import { up as up007 } from "../../../migrations/007.backup.js";
 import { up as up008 } from "../../../migrations/008.backup-folder.js";
+import { up as up009 } from "../../../migrations/009.label.js";
+import { up as up010 } from "../../../migrations/010.card-due-date.js";
+import { up as up011 } from "../../../migrations/011.checklist.js";
+import { up as up012 } from "../../../migrations/012.comment.js";
 import type { EmailPort } from "../../email/email.service.js";
 
 export type TestDb = Kysely<Database>;
@@ -40,13 +44,20 @@ export async function newTestDb(): Promise<TestDb> {
   await up006(db);
   await up007(db);
   await up008(db);
+  await up009(db);
+  await up010(db);
+  await up011(db);
+  await up012(db);
   return db;
 }
 
 export interface SentEmail {
-  type: "verify" | "reset" | "locked";
+  type: "verify" | "reset" | "locked" | "due" | "mention";
   to: string;
   code?: string;
+  cardTitle?: string;
+  link?: string;
+  snippet?: string;
 }
 
 export interface FakeEmail extends EmailPort {
@@ -67,6 +78,12 @@ export function fakeEmail(): FakeEmail {
     },
     sendAccountLocked: async (to) => {
       sent.push({ type: "locked", to });
+    },
+    sendCardDueSoon: async (to, cardTitle, link) => {
+      sent.push({ type: "due", to, cardTitle, link });
+    },
+    sendCommentMention: async (to, cardTitle, snippet, link) => {
+      sent.push({ type: "mention", to, cardTitle, snippet, link });
     },
     lastCodeFor(to) {
       for (let i = sent.length - 1; i >= 0; i--) {
