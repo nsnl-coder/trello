@@ -15,6 +15,22 @@ import { maintenanceStore } from "../hooks/useMaintenanceStore";
 
 export const { TRPCProvider, useTRPC } = createTRPCContext<AppRouter>();
 
+// The backend's errorFormatter attaches the active OTel traceId to every error.
+// Surface it so users can quote it when reporting a bug (joins logs + Sentry).
+export function errorTraceId(err: unknown): string | null {
+  if (err instanceof TRPCClientError) {
+    return (err as TRPCClientError<AppRouter>).data?.traceId ?? null;
+  }
+  return null;
+}
+
+// Appends a short "Ref: <id>" suffix to a user-facing message when a traceId
+// is available, so a failed action carries something the user can report.
+export function withTraceRef(message: string, err: unknown): string {
+  const id = errorTraceId(err);
+  return id ? `${message} (Ref: ${id})` : message;
+}
+
 // Refresh-retry only on an expired access token. The backend tags that exact
 // case with SESSION_EXPIRED; domain UNAUTHORIZED errors (bad credentials, wrong
 // current password) use other messages, so a failed login never triggers a
