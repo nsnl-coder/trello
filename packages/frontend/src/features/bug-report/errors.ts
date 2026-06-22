@@ -1,5 +1,6 @@
 import { TRPCClientError } from "@trpc/client";
 import { AttachmentError, BugReportError } from "shared";
+import { withTraceRef } from "../../lib/trpc";
 
 const MESSAGES: Record<BugReportError, string> = {
   [BugReportError.NOT_FOUND]: "That bug report no longer exists.",
@@ -11,7 +12,7 @@ export function bugReportErrorMessage(err: unknown): string {
     const msg = err.message;
     if (msg && msg in MESSAGES) return MESSAGES[msg as BugReportError];
   }
-  return "Something went wrong. Please try again.";
+  return withTraceRef("Something went wrong. Please try again.", err);
 }
 
 const ATTACHMENT_MESSAGES: Record<string, string> = {

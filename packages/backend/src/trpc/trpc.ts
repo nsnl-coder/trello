@@ -1,5 +1,6 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
+import { trace } from "@opentelemetry/api";
 import type { OpenApiMeta } from "trpc-to-openapi";
 import { AuthError, BackupError, Permission, RbacError, hasPermission } from "shared";
 import { findPublicUserById, isTestEmail } from "../features/auth/auth.repo.js";
@@ -7,7 +8,18 @@ import { findUserGlobalPerms } from "../features/rbac/rbac.repo.js";
 import { isMaintenance } from "../features/backup/backup.maintenance.js";
 import type { Context } from "./context.js";
 
-const t = initTRPC.context<Context>().meta<OpenApiMeta>().create({ transformer: superjson });
+const t = initTRPC
+  .context<Context>()
+  .meta<OpenApiMeta>()
+  .create({
+    transformer: superjson,
+    // Surface the active OTel traceId on every error so clients can show it
+    // and users can quote it when reporting a bug (joins logs + Sentry).
+    errorFormatter({ shape }) {
+      const traceId = trace.getActiveSpan()?.spanContext().traceId ?? null;
+      return { ...shape, data: { ...shape.data, traceId } };
+    },
+  });
 
 export const router = t.router;
 export const publicProcedure = t.procedure;

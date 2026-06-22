@@ -1,6 +1,7 @@
 import { TRPCClientError } from "@trpc/client";
 import { AuthError } from "shared";
 import type { AppRouter } from "backend/src/trpc/router.js";
+import { withTraceRef } from "../../lib/trpc";
 
 const MESSAGES: Record<AuthError, string> = {
   [AuthError.EMAIL_TAKEN]: "That email is already registered.",
@@ -35,7 +36,10 @@ export function authErrorKey(err: unknown): AuthError | null {
 
 export function authErrorMessage(err: unknown): string {
   const key = authErrorKey(err);
+  if (key === AuthError.EMAIL_SEND_FAILED) return withTraceRef(MESSAGES[key], err);
   if (key) return MESSAGES[key];
-  if (err instanceof TRPCClientError) return "Something went wrong. Please try again.";
+  if (err instanceof TRPCClientError) {
+    return withTraceRef("Something went wrong. Please try again.", err);
+  }
   return "Connection error, try again.";
 }
