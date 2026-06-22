@@ -11,7 +11,9 @@ source = '''
 # Labeled app containers carry the tier; unlabeled infra containers (loki,
 # grafana, vector...) fall back to vector's own VPS_ENV so they match the tier
 # instead of a hardcoded value (avoids a duplicate prod/production env label).
-.env = .label."com.project.env" || get_env_var("VPS_ENV") || "prod"
+tier, err = get_env_var("VPS_ENV")
+if err != null { tier = "prod" }
+.env = .label."com.project.env" || tier
 
 # App logs arrive as a JSON string in .message; parse before scrubbing so
 # del() on top-level fields actually hits. Skip non-JSON lines.
