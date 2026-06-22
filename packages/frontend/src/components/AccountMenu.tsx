@@ -1,6 +1,6 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { useNavigate } from "react-router-dom";
-import { ChevronUp, LogOut, Monitor, Moon, Settings, Shield, Sun } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { ChevronUp, LayoutDashboard, LogOut, Monitor, Moon, Settings, Shield, Sun } from "lucide-react";
 import { useAuthStore } from "../hooks/useAuthStore";
 import { useLogout } from "../hooks/useLogout";
 import { useThemeStore, type Theme } from "../hooks/useThemeStore";
@@ -19,6 +19,7 @@ const THEME_LABEL = { light: "Light", dark: "Dark", system: "System" } as const;
 // out into a single popover so the project list gets the rest of the column.
 export function AccountMenu() {
   const navigate = useNavigate();
+  const inAdmin = useLocation().pathname.startsWith("/admin");
   const user = useAuthStore((s) => s.user);
   const canAdmin = useCanAny(ADMIN_READ_PERMS);
   const logout = useLogout();
@@ -61,7 +62,12 @@ export function AccountMenu() {
             Theme: {THEME_LABEL[theme]}
           </DropdownMenu.Item>
 
-          {canAdmin ? (
+          {inAdmin ? (
+            <DropdownMenu.Item className={ITEM} onSelect={() => navigate("/")}>
+              <LayoutDashboard className={ICON} />
+              Go to app
+            </DropdownMenu.Item>
+          ) : canAdmin ? (
             <DropdownMenu.Item className={ITEM} onSelect={() => navigate("/admin")}>
               <Shield className={ICON} />
               Admin
