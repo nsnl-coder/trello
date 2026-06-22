@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { newTestDb, seedUser, type TestDb } from "../../auth/test/helpers.js";
 import * as rbac from "../rbac.service.js";
+import { SUPER_ACTOR } from "./helpers.js";
 
 describe("super admin invariant", () => {
   let db: TestDb;
@@ -28,16 +29,16 @@ describe("super admin invariant", () => {
 
   it("refuses to change a superuser's role via assignRole", async () => {
     const su = await seedUser(db, { email: "root@example.com", isSuperuser: true });
-    const role = await rbac.createRole(db, { name: "Support" });
+    const role = await rbac.createRole(db, SUPER_ACTOR, { name: "Support" });
     await expect(
-      rbac.assignRole(db, su.id, { roleId: role.id }),
+      rbac.assignRole(db, SUPER_ACTOR, su.id, { roleId: role.id }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
   it("assigns a role to a normal user", async () => {
     const user = await seedUser(db, { email: "user@example.com" });
-    const role = await rbac.createRole(db, { name: "Support" });
-    const res = await rbac.assignRole(db, user.id, { roleId: role.id });
+    const role = await rbac.createRole(db, SUPER_ACTOR, { name: "Support" });
+    const res = await rbac.assignRole(db, SUPER_ACTOR, user.id, { roleId: role.id });
     expect(res.role?.id).toBe(role.id);
   });
 });

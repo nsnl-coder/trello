@@ -4,8 +4,11 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import * as rbac from "../rbac.service.js";
 import { authzMatrix } from "./authz.js";
 import {
+  authedCaller,
   newTestDb,
   seedRole,
+  seedUserWithRole,
+  SUPER_ACTOR,
   superuserCaller,
   type TestDb,
 } from "./helpers.js";
@@ -65,7 +68,7 @@ describe("admin.rolesSetPermissions", () => {
       permissions: [Permission.AdminUsersRead],
     });
     await expect(
-      rbac.setRolePermissions(db, role.id, {
+      rbac.setRolePermissions(db, SUPER_ACTOR, role.id, {
         permissions: ["nope:nope" as Permission],
       }),
     ).rejects.toMatchObject({ message: RbacError.UNKNOWN_PERMISSION });
@@ -91,6 +94,42 @@ describe("admin.rolesSetPermissions", () => {
     await caller.admin.rolesSetPermissions(set);
     await caller.admin.rolesSetPermissions(set);
     expect(await perms(role.id)).toHaveLength(1);
+  });
+
+  describe("grant restriction", () => {
+    it("rejects setting a permission the actor does not hold", async () => {
+      const role = await seedRole(db, { name: "Target" });
+      const { user } = await seedUserWithRole(db, {
+        email: "manager@example.com",
+        permissions: [Permission.AdminRolesManage],
+      });
+      const caller = authedCaller(db, user.id);
+      await expect(
+        caller.admin.rolesSetPermissions({
+          roleId: role.id,
+          permissions: [Permission.AdminUsersManage],
+        }),
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: RbacError.CANNOT_GRANT_PERMISSION,
+      });
+      const after = (await perms(role.id)).map((p) => p.permission);
+      expect(after).toEqual([]);
+    });
+
+    it("allows setting a permission the actor holds", async () => {
+      const role = await seedRole(db, { name: "Target" });
+      const { user } = await seedUserWithRole(db, {
+        email: "manager@example.com",
+        permissions: [Permission.AdminRolesManage],
+      });
+      const caller = authedCaller(db, user.id);
+      const res = await caller.admin.rolesSetPermissions({
+        roleId: role.id,
+        permissions: [Permission.AdminRolesManage],
+      });
+      expect(res.permissions).toEqual([Permission.AdminRolesManage]);
+    });
   });
 
   describe("authz", () => {

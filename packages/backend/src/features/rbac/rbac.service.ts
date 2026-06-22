@@ -54,6 +54,32 @@ function assertKnownPermissions(permissions: Permission[]): void {
   }
 }
 
+// The actor performing a grant. Permissions come from the request context
+// (trpc ctx.user), already resolved fresh from the DB.
+export interface RbacActor {
+  isSuperuser: boolean;
+  permissions: ReadonlySet<Permission>;
+}
+
+function cannotGrant() {
+  return new TRPCError({
+    code: "FORBIDDEN",
+    message: RbacError.CANNOT_GRANT_PERMISSION,
+  });
+}
+
+// Least privilege: a non-superuser may only grant permissions they hold. Blocks
+// a roles-manager from minting a role (or assigning one) with perms above them.
+function assertCanGrant(
+  actor: RbacActor,
+  permissions: readonly Permission[],
+): void {
+  if (actor.isSuperuser) return;
+  for (const p of permissions) {
+    if (!actor.permissions.has(p)) throw cannotGrant();
+  }
+}
+
 function toAdminUser(row: AdminUserRow): AdminUser {
   return {
     id: row.id,
@@ -95,8 +121,15 @@ export async function getRole(db: Db, roleId: string): Promise<Role> {
   return toRole(db, row);
 }
 
-export async function createRole(db: Db, input: CreateRoleInput): Promise<Role> {
-  if (input.permissions) assertKnownPermissions(input.permissions);
+export async function createRole(
+  db: Db,
+  actor: RbacActor,
+  input: CreateRoleInput,
+): Promise<Role> {
+  if (input.permissions) {
+    assertKnownPermissions(input.permissions);
+    assertCanGrant(actor, input.permissions);
+  }
   const existing = await repo.findRoleByName(db, input.name);
   if (existing) throw nameTaken();
 
@@ -133,10 +166,12 @@ export async function updateRole(
 
 export async function setRolePermissions(
   db: Db,
+  actor: RbacActor,
   roleId: string,
   input: UpdateRolePermissionsInput,
 ): Promise<Role> {
   assertKnownPermissions(input.permissions);
+  assertCanGrant(actor, input.permissions);
   const role = await repo.findRoleById(db, roleId);
   if (!role) throw roleNotFound();
   await repo.setRolePermissions(db, roleId, input.permissions);
@@ -166,6 +201,7 @@ export async function getUser(db: Db, userId: string): Promise<AdminUser> {
 
 export async function assignRole(
   db: Db,
+  actor: RbacActor,
   userId: string,
   input: AssignGlobalRoleInput,
 ): Promise<AdminUser> {
@@ -178,6 +214,9 @@ export async function assignRole(
   if (input.roleId) {
     const role = await repo.findRoleById(db, input.roleId);
     if (!role) throw roleNotFound();
+    // Assigning a role grants its permissions, so the actor must hold them all.
+    const rolePerms = await repo.findRolePermissions(db, input.roleId);
+    assertCanGrant(actor, rolePerms.map((p) => p.permission));
   }
   await repo.assignUserRole(db, userId, input.roleId);
   const row = await repo.findAdminUserById(db, userId);
