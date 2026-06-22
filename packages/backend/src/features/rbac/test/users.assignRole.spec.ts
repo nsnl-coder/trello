@@ -3,9 +3,11 @@ import { Permission, RbacError } from "shared";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { authzMatrix } from "./authz.js";
 import {
+  authedCaller,
   newTestDb,
   seedRole,
   seedUser,
+  seedUserWithRole,
   superuserCaller,
   type TestDb,
 } from "./helpers.js";
@@ -71,6 +73,46 @@ describe("admin.usersAssignRole", () => {
     const { caller } = await superuserCaller(db);
     const res = await caller.admin.usersAssignRole({ userId: user.id, roleId: role.id });
     expect(res.isSuperuser).toBe(false);
+  });
+
+  describe("grant restriction", () => {
+    it("rejects assigning a role with a permission the actor lacks", async () => {
+      const powerful = await seedRole(db, {
+        name: "Powerful",
+        permissions: [Permission.AdminRolesManage],
+      });
+      const target = await seedUser(db, { email: "t@example.com" });
+      const { user } = await seedUserWithRole(db, {
+        email: "manager@example.com",
+        permissions: [Permission.AdminUsersManage],
+      });
+      const caller = authedCaller(db, user.id);
+      await expect(
+        caller.admin.usersAssignRole({ userId: target.id, roleId: powerful.id }),
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: RbacError.CANNOT_GRANT_PERMISSION,
+      });
+      expect((await roleIdOf(target.id)).role_id).toBeNull();
+    });
+
+    it("allows assigning a role whose permissions the actor holds", async () => {
+      const ok = await seedRole(db, {
+        name: "Helpers",
+        permissions: [Permission.AdminUsersManage],
+      });
+      const target = await seedUser(db, { email: "t@example.com" });
+      const { user } = await seedUserWithRole(db, {
+        email: "manager@example.com",
+        permissions: [Permission.AdminUsersManage],
+      });
+      const caller = authedCaller(db, user.id);
+      const res = await caller.admin.usersAssignRole({
+        userId: target.id,
+        roleId: ok.id,
+      });
+      expect(res.role?.id).toBe(ok.id);
+    });
   });
 
   describe("authz", () => {

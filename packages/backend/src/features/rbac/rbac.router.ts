@@ -46,7 +46,7 @@ export const rbacRouter = router({
     .meta({ openapi: { method: "POST", path: "/admin/roles", tags: ["admin"], protect: true, summary: "Create a role" } })
     .input(createRoleInput)
     .output(roleSchema)
-    .mutation(({ ctx, input }) => rbac.createRole(ctx.db, input)),
+    .mutation(({ ctx, input }) => rbac.createRole(ctx.db, ctx.user, input)),
 
   rolesUpdate: globalProcedure(Permission.AdminRolesManage)
     .meta({ openapi: { method: "PATCH", path: "/admin/roles/{roleId}", tags: ["admin"], protect: true, summary: "Update a role" } })
@@ -62,7 +62,9 @@ export const rbacRouter = router({
     .input(roleIdInput.merge(updateRolePermissionsInput))
     .output(roleSchema)
     .mutation(({ ctx, input }) =>
-      rbac.setRolePermissions(ctx.db, input.roleId, { permissions: input.permissions }),
+      rbac.setRolePermissions(ctx.db, ctx.user, input.roleId, {
+        permissions: input.permissions,
+      }),
     ),
 
   rolesDelete: globalProcedure(Permission.AdminRolesManage)
@@ -88,6 +90,6 @@ export const rbacRouter = router({
     .input(userIdInput.merge(assignGlobalRoleInput))
     .output(adminUserSchema)
     .mutation(({ ctx, input }) =>
-      rbac.assignRole(ctx.db, input.userId, { roleId: input.roleId }),
+      rbac.assignRole(ctx.db, ctx.user, input.userId, { roleId: input.roleId }),
     ),
 });

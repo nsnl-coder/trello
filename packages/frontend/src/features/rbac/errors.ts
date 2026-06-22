@@ -6,6 +6,8 @@ const MESSAGES: Record<RbacError, string> = {
   [RbacError.ROLE_NOT_FOUND]: "That role no longer exists.",
   [RbacError.ROLE_NAME_TAKEN]: "A role with that name already exists.",
   [RbacError.UNKNOWN_PERMISSION]: "One of the selected permissions is invalid.",
+  [RbacError.CANNOT_GRANT_PERMISSION]:
+    "You can only grant permissions you hold yourself.",
 };
 
 export function rbacErrorMessage(err: unknown): string {

@@ -1,4 +1,5 @@
 import type { Permission } from "shared";
+import type { RbacActor } from "../rbac.service.js";
 import {
   createCaller,
   makeContext,
@@ -16,6 +17,12 @@ export {
 } from "../../auth/test/helpers.js";
 
 export type AppCaller = ReturnType<typeof createCaller>;
+
+/** Actor for direct service calls that bypass the grant check (superuser). */
+export const SUPER_ACTOR: RbacActor = {
+  isSuperuser: true,
+  permissions: new Set(),
+};
 
 export interface SeedRoleOpts {
   name: string;
