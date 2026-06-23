@@ -21,6 +21,7 @@ export * from "./invite.schema.js";
 export * from "./bug-report.schema.js";
 export * from "./card-template.schema.js";
 export * from "./automation.schema.js";
+export * from "./analytics.schema.js";
 export * from "./test-user.js";
 export * from "./errors/auth.error.js";
 export * from "./errors/rbac.error.js";

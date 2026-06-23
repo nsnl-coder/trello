@@ -3,6 +3,7 @@ import {
   MoreHorizontal,
   Pencil,
   History,
+  BarChart3,
   Tag,
   LayoutTemplate,
   Zap,
@@ -20,6 +21,7 @@ interface Props {
   onToggleWide: () => void;
   onEdit: () => void;
   onHistory: () => void;
+  onAnalytics: () => void;
   onLabels: () => void;
   onTemplates: () => void;
   onAutomation: () => void;
@@ -40,6 +42,7 @@ export function BoardMenu({
   onToggleWide,
   onEdit,
   onHistory,
+  onAnalytics,
   onLabels,
   onTemplates,
   onAutomation,
@@ -69,6 +72,11 @@ export function BoardMenu({
           <DropdownMenu.Item className={ITEM} onSelect={onHistory}>
             <History className={ICON} />
             Activity history
+          </DropdownMenu.Item>
+
+          <DropdownMenu.Item className={ITEM} onSelect={onAnalytics}>
+            <BarChart3 className={ICON} />
+            Analytics
           </DropdownMenu.Item>
 
           {editable ? (

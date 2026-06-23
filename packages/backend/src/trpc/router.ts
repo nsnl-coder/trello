@@ -20,6 +20,7 @@ import { invitesRouter } from "../features/invite/invite.router.js";
 import { bugReportsRouter } from "../features/bug-report/bug-report.router.js";
 import { cardTemplatesRouter } from "../features/card-template/card-template.router.js";
 import { automationsRouter } from "../features/automation/automation.router.js";
+import { analyticsRouter } from "../features/analytics/analytics.router.js";
 
 export const appRouter = router({
   health: healthRouter,
@@ -44,6 +45,7 @@ export const appRouter = router({
   bugReports: bugReportsRouter,
   cardTemplates: cardTemplatesRouter,
   automations: automationsRouter,
+  analytics: analyticsRouter,
 });
 
 export type AppRouter = typeof appRouter;

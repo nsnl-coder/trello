@@ -168,4 +168,5 @@ export const cacheKeys = {
   authUser: (userId: string) => `auth:user:${userId}`,
   notifUnread: (userId: string) => `notif:unread:${userId}`,
   rate: (path: string, ip: string, windowStart: number) => `rl:${path}:${ip}:${windowStart}`,
+  analytics: (boardId: string) => `analytics:${boardId}`,
 };

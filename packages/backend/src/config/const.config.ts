@@ -35,3 +35,4 @@ export type LogEvent = (typeof LogEvent)[keyof typeof LogEvent];
 // only has to cover the high-value mutations.
 export const AUTH_CACHE_TTL_SEC = 30;
 export const NOTIF_UNREAD_TTL_SEC = 60;
+export const ANALYTICS_TTL_SEC = 60;

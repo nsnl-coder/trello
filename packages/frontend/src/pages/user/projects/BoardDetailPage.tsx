@@ -32,6 +32,7 @@ import { LabelManager } from "../../../features/board/components/LabelManager";
 import { TemplatesManager } from "../../../features/board/components/TemplatesManager";
 import { AutomationManager } from "../../../features/automation/components/AutomationManager";
 import { BoardActivityPanel } from "../../../features/board/components/BoardActivityPanel";
+import { AnalyticsPanel } from "../../../features/board/components/AnalyticsPanel";
 import { ArchivedItemsPanel } from "../../../features/board/components/ArchivedItemsPanel";
 import { LabelFilterBar } from "../../../features/board/components/LabelFilterBar";
 import { AssigneeFilterBar } from "../../../features/board/components/AssigneeFilterBar";
@@ -120,6 +121,7 @@ export function BoardDetailPage() {
   const [showAutomation, setShowAutomation] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showActivity, setShowActivity] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
   const [labelFilter, setLabelFilter] = useState<string[]>([]);
   const [assigneeFilter, setAssigneeFilter] = useState<string[]>([]);
   const [assignedToMe, setAssignedToMe] = useState(false);
@@ -521,6 +523,7 @@ export function BoardDetailPage() {
               onToggleWide={toggleWide}
               onEdit={() => setShowEdit(true)}
               onHistory={() => setShowActivity(true)}
+              onAnalytics={() => setShowAnalytics(true)}
               onLabels={() => setShowLabels(true)}
               onTemplates={() => setShowTemplates(true)}
               onAutomation={() => setShowAutomation(true)}
@@ -725,6 +728,15 @@ export function BoardDetailPage() {
         widthClassName="max-w-lg"
       >
         <BoardActivityPanel boardId={board.id} />
+      </Modal>
+
+      <Modal
+        open={showAnalytics}
+        onClose={() => setShowAnalytics(false)}
+        title="Board analytics"
+        widthClassName="max-w-lg"
+      >
+        <AnalyticsPanel boardId={board.id} />
       </Modal>
 
       {editable ? (
