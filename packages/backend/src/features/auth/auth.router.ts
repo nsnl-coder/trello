@@ -44,7 +44,11 @@ function setAccessCookie(ctx: Context, token: string): void {
   ctx.res?.cookie("access_token", token, {
     httpOnly: true,
     secure: env.COOKIE_SECURE,
-    sameSite: "strict",
+    // lax (not strict): the admin SSO forward-auth bounces the browser
+    // cross-site to <app>/api/sso/authorize, a top-level GET that must carry
+    // this cookie to prove super-admin. strict drops it there -> redirect loop.
+    // Mutations are tRPC POSTs, which lax still withholds cross-site (CSRF-safe).
+    sameSite: "lax",
     maxAge: env.ACCESS_TTL_MS,
     path: "/",
   });

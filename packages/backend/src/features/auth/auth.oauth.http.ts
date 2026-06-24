@@ -32,7 +32,8 @@ function setSessionCookies(
   res.cookie("access_token", tokens.accessToken, {
     httpOnly: true,
     secure: env.COOKIE_SECURE,
-    sameSite: "strict",
+    // lax so the admin SSO cross-site bounce carries it; see auth.router.ts.
+    sameSite: "lax",
     maxAge: env.ACCESS_TTL_MS,
     path: "/",
   });

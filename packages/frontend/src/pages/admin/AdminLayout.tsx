@@ -5,6 +5,9 @@ import {
   Users,
   Bug,
   DatabaseBackup,
+  LineChart,
+  Database,
+  ExternalLink,
   LogOut,
   PanelLeftClose,
   PanelLeft,
@@ -12,6 +15,8 @@ import {
 } from "lucide-react";
 import { Permission } from "shared";
 import { Can } from "../../features/rbac/components/Can";
+import { config } from "../../config/env.config";
+import { useAuthStore } from "../../hooks/useAuthStore";
 import { useSidebarStore } from "../../hooks/useSidebarStore";
 import { useLogout } from "../../hooks/useLogout";
 import { NotificationBell } from "../../features/notification/components/NotificationBell";
@@ -59,6 +64,23 @@ const NAV_ITEMS: AdminNavItem[] = [
   },
 ];
 
+interface OpsLink {
+  href: string;
+  label: string;
+  hint: string;
+  icon: LucideIcon;
+}
+
+// External admin consoles on sibling subdomains (admin SSO-gated). Empty on
+// local, where these hosts don't exist.
+function opsLinks(): OpsLink[] {
+  if (!config.opsConsoles) return [];
+  return [
+    { href: config.opsConsoles.grafana, label: "Grafana", hint: "Metrics, logs & traces", icon: LineChart },
+    { href: config.opsConsoles.redis, label: "RedisInsight", hint: "Cache & realtime bus", icon: Database },
+  ];
+}
+
 const navItemClass = ({ isActive }: { isActive: boolean }) =>
   `group flex items-start gap-3 rounded-lg px-3 py-2 text-sm transition ${
     isActive
@@ -69,6 +91,8 @@ const navItemClass = ({ isActive }: { isActive: boolean }) =>
 function AdminSidebar() {
   const collapsed = useSidebarStore((s) => s.collapsed);
   const toggleCollapsed = useSidebarStore((s) => s.toggle);
+  const isSuperuser = useAuthStore((s) => s.user?.isSuperuser ?? false);
+  const ops = isSuperuser ? opsLinks() : [];
   const logout = useLogout();
 
   if (collapsed) {
@@ -107,6 +131,19 @@ function AdminSidebar() {
               <item.icon className="h-4 w-4" />
             </NavLink>
           </Can>
+        ))}
+        {ops.map((link) => (
+          <a
+            key={link.href}
+            href={link.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={link.label}
+            title={link.label}
+            className="rounded-lg p-2 text-muted hover:bg-surface-muted hover:text-foreground"
+          >
+            <link.icon className="h-4 w-4" />
+          </a>
         ))}
 
         <div className="mt-auto flex flex-col items-center gap-1">
@@ -176,6 +213,34 @@ function AdminSidebar() {
             </Can>
           ))}
         </nav>
+
+        {ops.length > 0 && (
+          <>
+            <span className="mt-4 px-3 text-xs font-semibold uppercase tracking-wide text-muted">
+              Observability
+            </span>
+            <nav className="mt-1 flex flex-col gap-0.5">
+              {ops.map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex items-start gap-3 rounded-lg px-3 py-2 text-sm text-foreground/70 transition hover:bg-surface-muted"
+                >
+                  <link.icon className="mt-0.5 h-4 w-4 shrink-0 text-muted group-hover:text-foreground/70" />
+                  <span className="flex flex-1 flex-col leading-tight">
+                    <span className="flex items-center gap-1">
+                      {link.label}
+                      <ExternalLink className="h-3 w-3 text-muted" />
+                    </span>
+                    <span className="text-xs text-muted">{link.hint}</span>
+                  </span>
+                </a>
+              ))}
+            </nav>
+          </>
+        )}
       </div>
 
       <div className="flex items-center gap-1 border-t border-border p-3">
