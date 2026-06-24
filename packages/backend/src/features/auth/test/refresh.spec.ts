@@ -142,15 +142,15 @@ describe("auth.refresh", () => {
     await refresh(raw, res);
 
     expect(res.cookies).toHaveLength(2);
-    const hardened = { httpOnly: true, sameSite: "strict", path: "/", secure: env.COOKIE_SECURE };
+    const hardened = { httpOnly: true, path: "/", secure: env.COOKIE_SECURE };
 
     const access = res.cookies.find((x) => x.name === "access_token");
     expect(access, "access_token cookie").toBeDefined();
-    expect(access?.options).toMatchObject({ ...hardened, maxAge: env.ACCESS_TTL_MS });
+    expect(access?.options).toMatchObject({ ...hardened, sameSite: "lax", maxAge: env.ACCESS_TTL_MS });
 
     const refreshCookie = res.cookies.find((x) => x.name === "refresh_token");
     expect(refreshCookie, "refresh_token cookie").toBeDefined();
-    expect(refreshCookie?.options).toMatchObject({ ...hardened, maxAge: env.REFRESH_TTL_MS });
+    expect(refreshCookie?.options).toMatchObject({ ...hardened, sameSite: "strict", maxAge: env.REFRESH_TTL_MS });
   });
 
   it("rejects a valid token whose user was deleted", async () => {

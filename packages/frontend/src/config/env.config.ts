@@ -22,8 +22,19 @@ const apiUrl =
       ? (env.VITE_API_URL_DEV as string | undefined) ?? "/trpc"
       : (env.VITE_API_URL_LOCAL as string | undefined) ?? "/trpc";
 
+// Observability/ops consoles on sibling subdomains (admin SSO-gated). null
+// locally (no such hosts); per-tier domains otherwise. Used by the admin nav.
+const opsConsoles =
+  appEnv === "prod"
+    ? { grafana: "https://grafana.trello-clone.shop", redis: "https://redis.trello-clone.shop" }
+    : appEnv === "dev"
+      ? { grafana: "https://dev-grafana.trello-clone.shop", redis: "https://dev-redis.trello-clone.shop" }
+      : null;
+
 export const config = {
   apiUrl,
+  // External admin consoles (Grafana, RedisInsight); null on local.
+  opsConsoles,
   // SSE/OpenAPI base. tRPC lives at `<base>/trpc`; the REST/SSE routes live at
   // `<base>/api`. Derive by swapping the trailing `/trpc` so no new env var is
   // needed (local: backend-origin/api; prod same-origin: /api).

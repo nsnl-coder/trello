@@ -86,13 +86,14 @@ describe("auth.login", () => {
       password: seeded.password,
     });
 
-    const hardened = { httpOnly: true, sameSite: "strict", path: "/", secure: env.COOKIE_SECURE };
+    const hardened = { httpOnly: true, path: "/", secure: env.COOKIE_SECURE };
 
+    // access_token is lax so the admin SSO cross-site bounce carries it.
     const access = res.cookies.find((c) => c.name === "access_token");
-    expect(access?.options).toMatchObject({ ...hardened, maxAge: env.ACCESS_TTL_MS });
+    expect(access?.options).toMatchObject({ ...hardened, sameSite: "lax", maxAge: env.ACCESS_TTL_MS });
 
     const refresh = res.cookies.find((c) => c.name === "refresh_token");
-    expect(refresh?.options).toMatchObject({ ...hardened, maxAge: env.REFRESH_TTL_MS });
+    expect(refresh?.options).toMatchObject({ ...hardened, sameSite: "strict", maxAge: env.REFRESH_TTL_MS });
   });
 
   it("issues an access cookie that authenticates a follow-up request (end-to-end)", async () => {
