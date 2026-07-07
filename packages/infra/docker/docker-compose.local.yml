@@ -1,0 +1,128 @@
+# Local development stack — run via the root Makefile (`make local`), which
+# passes `--env-file .env` so compose interpolation reads the repo-root .env
+# (the SINGLE local env file, see .env.example).
+#
+# App services run dev servers (tsx watch + Vite HMR + next dev) with the repo
+# bind-mounted, so code changes reflect live — no image builds. node_modules is
+# reused from the host (same linux/x64 platform), so startup is instant. The
+# production images (Dockerfile.backend/nginx/landing) are only used by the
+# deploy workflows, never here.
+#
+# URLs: frontend http://localhost:5173, landing http://localhost:3001,
+#       backend http://localhost:4000, MinIO console http://localhost:9001.
+# No observability stack locally: backend env defaults degrade gracefully
+# (console traces, no Sentry, ops consoles hidden).
+
+name: trello-local
+
+x-node-dev: &node-dev
+  image: node:22-bookworm-slim
+  working_dir: /app
+  # Bind-mount the whole repo (source + already-installed node_modules).
+  volumes:
+    - ../../..:/app
+  restart: unless-stopped
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: trelloclone
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d trelloclone']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend via tsx watch (auto-restart on change). Builds shared once first
+  # (backend imports the compiled `shared` package).
+  backend:
+    <<: *node-dev
+    # The whole root .env goes in (JWT secrets, optional Google/Mailtrap
+    # creds, ...); the overrides below re-point infra URLs at the compose
+    # services. Real env always wins over the dotenv fallback in env.config.ts.
+    env_file:
+      - path: ../../../.env
+        required: true
+    environment:
+      VPS_ENV: local
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/trelloclone
+      REDIS_URL: redis://redis:6379
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      # Reuse the bind-mounted host node_modules as-is: don't let `pnpm run`
+      # verify/reinstall deps (it would purge the modules dir mid-run).
+      PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN: 'false'
+    command: sh -c "corepack enable && pnpm --filter shared build && pnpm --filter backend dev"
+    ports:
+      - '4000:4000'
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  # Frontend via Vite dev server (HMR). Proxies /trpc + /api to the backend
+  # container (VITE_PROXY_TARGET; nginx does this in deployed envs).
+  frontend:
+    <<: *node-dev
+    environment:
+      VITE_PROXY_TARGET: http://backend:4000
+      PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN: 'false'
+    command: sh -c "corepack enable && pnpm --filter shared build && pnpm --filter frontend exec vite --host 0.0.0.0 --port 5173"
+    ports:
+      - '5173:5173'
+    depends_on:
+      - backend
+
+  # Landing via next dev. Standalone (reads no secrets; localhost defaults).
+  landing:
+    <<: *node-dev
+    environment:
+      PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN: 'false'
+    command: sh -c "corepack enable && pnpm --filter landing exec next dev -p 3001 -H 0.0.0.0"
+    ports:
+      - '3001:3001'
+
+volumes:
+  pgdata:
+  miniodata:

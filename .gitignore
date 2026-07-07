@@ -15,3 +15,4 @@ dist/
 .mcp.json
 vps-info.md
 .claude/worktrees/
+certs

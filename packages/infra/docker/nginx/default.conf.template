@@ -1,0 +1,395 @@
+# App-internal reverse proxy + static frontend, in ONE nginx (the frontend
+# image). It sits BEHIND the shared Traefik on the 'edge' network: listens on
+# plain HTTP :80, publishes NO host ports, and holds NO certs (Traefik
+# terminates TLS with the Cloudflare Origin cert and routes every
+# *.${DOMAIN} host here — one router; this file splits by server_name).
+#
+# Rendered at container start by the nginx image's envsubst entrypoint
+# (/etc/nginx/templates/*.template -> /etc/nginx/conf.d/). Substituted vars:
+#   ${DOMAIN}              registrable domain — comes from the env, NEVER
+#                          hardcoded in the repo
+#   ${SSO_SESSION_DOMAIN}  host holding the app session cookie (the app host
+#                          of the CURRENT tier) — where the SSO gate bounces
+#                          unauthenticated admins to prove super-admin
+# NGINX_ENVSUBST_FILTER=DOMAIN (set in compose) limits substitution to *DOMAIN*
+# names, so nginx runtime vars ($host, $uri, ...) survive envsubst.
+#
+# Both tiers' hosts are listed in every server_name — harmless, because stage
+# and prod are separate VPSes and DNS only points a tier's hosts at its own box
+# (same convention as manibook):
+#   landing     ${DOMAIN} / www.${DOMAIN}      | stage.${DOMAIN}
+#   app (SPA)   app.${DOMAIN}                  | stage-app.${DOMAIN}
+#   api         api.${DOMAIN}                  | stage-api.${DOMAIN}
+#   consoles    grafana|minio|redis|prometheus|cadvisor|pgadmin|portainer
+#               .${DOMAIN}                     | stage-<same>.${DOMAIN}
+#
+# Upstreams use network-scoped names (backend.trello_internal, ...): this nginx
+# is on BOTH 'edge' (shared across apps) and 'internal'. Another app on edge
+# can also have a service named 'backend', and bare-name Docker DNS may return
+# THAT app's IP. Scoping to trello's internal network makes resolution
+# unambiguous (lesson learned from manibook on the shared stage box).
+
+# Extract the bare trace-id (2nd field of W3C traceparent: version-traceId-
+# spanId-flags) so nginx, backend, and Tempo share ONE id. Else $request_id.
+map $http_traceparent $trace_id {
+  "~^[0-9a-f]{2}-(?<tid>[0-9a-f]{32})-" $tid;
+  default                               $request_id;
+}
+
+# Websocket upgrade (Grafana Live, RedisInsight, Portainer console).
+map $http_upgrade $connection_upgrade {
+  default upgrade;
+  ''      close;
+}
+
+log_format main_json escape=json
+  '{"time":"$time_iso8601","service":"nginx","level":"info",'
+  '"host":"$host","method":"$request_method","path":"$uri","status":$status,'
+  '"responseTime":$request_time,"traceId":"$trace_id","ip":"$remote_addr"}';
+
+# Unknown Host headers (direct-to-IP scans, stray subdomains) -> drop.
+server {
+  listen 80 default_server;
+  server_name _;
+  return 444;
+}
+
+# app.${DOMAIN} / stage-app.${DOMAIN} : frontend SPA (Vite static).
+# Same-origin: /trpc, /api, /otlp are proxied from here, so no CORS in play.
+server {
+  listen 80;
+  server_name app.${DOMAIN} stage-app.${DOMAIN};
+  root /usr/share/nginx/html;
+  index index.html;
+
+  access_log /dev/stdout main_json;
+  error_log /dev/stderr;
+
+  # tRPC API -> backend container
+  location /trpc {
+    include /etc/nginx/snippets/proxy_headers.conf;
+    proxy_pass http://backend.trello_internal:4000;
+  }
+
+  # REST + /api/client-log + SSO/OAuth callbacks -> backend container
+  location /api {
+    include /etc/nginx/snippets/proxy_headers.conf;
+    proxy_pass http://backend.trello_internal:4000;
+  }
+
+  # Browser OTLP traces -> Tempo (same-origin, so no CORS needed).
+  location /otlp/ {
+    include /etc/nginx/snippets/proxy_headers.conf;
+    proxy_pass http://tempo.trello_internal:4318/;
+  }
+
+  # /metrics is internal-only (leaks traffic shape + endpoint inventory).
+  location /metrics {
+    return 404;
+  }
+
+  # Hashed build assets: cache forever.
+  location /assets/ {
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+  }
+
+  # SPA fallback
+  location / {
+    try_files $uri $uri/ /index.html;
+  }
+}
+
+# api.${DOMAIN} / stage-api.${DOMAIN} : backend direct (REST + tRPC + swagger).
+server {
+  listen 80;
+  server_name api.${DOMAIN} stage-api.${DOMAIN};
+
+  access_log /dev/stdout main_json;
+  error_log /dev/stderr;
+
+  location = /metrics { return 404; }
+
+  location / {
+    include /etc/nginx/snippets/proxy_headers.conf;
+    proxy_pass http://backend.trello_internal:4000;
+  }
+}
+
+# ${DOMAIN} (apex) + www / stage.${DOMAIN} : landing (Next.js node server).
+server {
+  listen 80;
+  server_name ${DOMAIN} www.${DOMAIN} stage.${DOMAIN};
+
+  access_log /dev/stdout main_json;
+  error_log /dev/stderr;
+
+  location / {
+    include /etc/nginx/snippets/proxy_headers.conf;
+    proxy_pass http://landing.trello_internal:3000;
+  }
+}
+
+# ---------------------------------------------------------------------------
+# Admin SSO gate (kept from the dedicated-VPS setup): each console host below
+# is protected by nginx auth_request against the backend. Only a super-admin
+# app session gets in:
+#   /__sso/verify   (internal) validates the per-host SSO cookie
+#   /__sso/callback exchanges a transfer token for the SSO cookie (NOT gated)
+#   @sso_signin     no/expired cookie -> bounce to the app host (which holds
+#                   the access_token cookie) to prove super-admin
+# ---------------------------------------------------------------------------
+
+# Grafana (:3000). Auto-login via the X-WEBAUTH-User header, which Grafana only
+# trusts from this nginx's pinned internal IP (GF_AUTH_PROXY_WHITELIST).
+server {
+  listen 80;
+  server_name grafana.${DOMAIN} stage-grafana.${DOMAIN};
+
+  access_log /dev/stdout main_json;
+  error_log /dev/stderr;
+
+  location = /__sso/verify {
+    internal;
+    proxy_pass http://backend.trello_internal:4000/api/sso/verify;
+    proxy_set_header Host $host;
+    proxy_pass_request_body off;
+    proxy_set_header Content-Length "";
+  }
+  location = /__sso/callback {
+    proxy_pass http://backend.trello_internal:4000/api/sso/callback;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+  }
+  location @sso_signin {
+    return 302 https://${SSO_SESSION_DOMAIN}/api/sso/authorize?rd=https://$host$request_uri;
+  }
+
+  location / {
+    auth_request /__sso/verify;
+    auth_request_set $sso_user $upstream_http_x_sso_user;
+    error_page 401 = @sso_signin;
+
+    include /etc/nginx/snippets/proxy_headers.conf;
+    # Identity from auth_request; overwrites any client-sent value.
+    proxy_set_header X-WEBAUTH-User $sso_user;
+    proxy_set_header Upgrade    $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_pass http://grafana.trello_internal:3000;
+  }
+}
+
+# MinIO admin console (:9001). Admin-gated by the same SSO; MinIO keeps its own
+# login (it has no header-trust mode), so reaching it still needs MinIO creds.
+server {
+  listen 80;
+  server_name minio.${DOMAIN} stage-minio.${DOMAIN};
+
+  access_log /dev/stdout main_json;
+  error_log /dev/stderr;
+
+  # Admin uploads can be large; don't cap them at this hop.
+  client_max_body_size 0;
+
+  location = /__sso/verify {
+    internal;
+    proxy_pass http://backend.trello_internal:4000/api/sso/verify;
+    proxy_set_header Host $host;
+    proxy_pass_request_body off;
+    proxy_set_header Content-Length "";
+  }
+  location = /__sso/callback {
+    proxy_pass http://backend.trello_internal:4000/api/sso/callback;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+  }
+  location @sso_signin {
+    return 302 https://${SSO_SESSION_DOMAIN}/api/sso/authorize?rd=https://$host$request_uri;
+  }
+
+  location / {
+    auth_request /__sso/verify;
+    error_page 401 = @sso_signin;
+
+    include /etc/nginx/snippets/proxy_headers.conf;
+    proxy_set_header Upgrade    $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_pass http://minio.trello_internal:9001;
+  }
+}
+
+# RedisInsight UI (:5540). No login of its own, so it MUST stay behind the same
+# admin SSO forward-auth. Needs websockets (socket.io).
+server {
+  listen 80;
+  server_name redis.${DOMAIN} stage-redis.${DOMAIN};
+
+  access_log /dev/stdout main_json;
+  error_log /dev/stderr;
+
+  location = /__sso/verify {
+    internal;
+    proxy_pass http://backend.trello_internal:4000/api/sso/verify;
+    proxy_set_header Host $host;
+    proxy_pass_request_body off;
+    proxy_set_header Content-Length "";
+  }
+  location = /__sso/callback {
+    proxy_pass http://backend.trello_internal:4000/api/sso/callback;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+  }
+  location @sso_signin {
+    return 302 https://${SSO_SESSION_DOMAIN}/api/sso/authorize?rd=https://$host$request_uri;
+  }
+
+  location / {
+    auth_request /__sso/verify;
+    error_page 401 = @sso_signin;
+
+    include /etc/nginx/snippets/proxy_headers.conf;
+    proxy_set_header Upgrade    $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_pass http://redisinsight.trello_internal:5540;
+  }
+}
+
+# Prometheus UI (:9090). No login of its own -> admin SSO forward-auth only.
+server {
+  listen 80;
+  server_name prometheus.${DOMAIN} stage-prometheus.${DOMAIN};
+
+  access_log /dev/stdout main_json;
+  error_log /dev/stderr;
+
+  location = /__sso/verify {
+    internal;
+    proxy_pass http://backend.trello_internal:4000/api/sso/verify;
+    proxy_set_header Host $host;
+    proxy_pass_request_body off;
+    proxy_set_header Content-Length "";
+  }
+  location = /__sso/callback {
+    proxy_pass http://backend.trello_internal:4000/api/sso/callback;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+  }
+  location @sso_signin {
+    return 302 https://${SSO_SESSION_DOMAIN}/api/sso/authorize?rd=https://$host$request_uri;
+  }
+
+  location / {
+    auth_request /__sso/verify;
+    error_page 401 = @sso_signin;
+
+    include /etc/nginx/snippets/proxy_headers.conf;
+    proxy_pass http://prometheus.trello_internal:9090;
+  }
+}
+
+# cAdvisor UI (:8080). No login of its own -> admin SSO forward-auth only.
+server {
+  listen 80;
+  server_name cadvisor.${DOMAIN} stage-cadvisor.${DOMAIN};
+
+  access_log /dev/stdout main_json;
+  error_log /dev/stderr;
+
+  location = /__sso/verify {
+    internal;
+    proxy_pass http://backend.trello_internal:4000/api/sso/verify;
+    proxy_set_header Host $host;
+    proxy_pass_request_body off;
+    proxy_set_header Content-Length "";
+  }
+  location = /__sso/callback {
+    proxy_pass http://backend.trello_internal:4000/api/sso/callback;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+  }
+  location @sso_signin {
+    return 302 https://${SSO_SESSION_DOMAIN}/api/sso/authorize?rd=https://$host$request_uri;
+  }
+
+  location / {
+    auth_request /__sso/verify;
+    error_page 401 = @sso_signin;
+
+    include /etc/nginx/snippets/proxy_headers.conf;
+    proxy_pass http://cadvisor.trello_internal:8080;
+  }
+}
+
+# pgAdmin (:80). Admin SSO-gated; pgAdmin keeps its own login on top. Allows
+# large SQL imports (no body cap) like the MinIO console.
+server {
+  listen 80;
+  server_name pgadmin.${DOMAIN} stage-pgadmin.${DOMAIN};
+
+  access_log /dev/stdout main_json;
+  error_log /dev/stderr;
+
+  client_max_body_size 0;
+
+  location = /__sso/verify {
+    internal;
+    proxy_pass http://backend.trello_internal:4000/api/sso/verify;
+    proxy_set_header Host $host;
+    proxy_pass_request_body off;
+    proxy_set_header Content-Length "";
+  }
+  location = /__sso/callback {
+    proxy_pass http://backend.trello_internal:4000/api/sso/callback;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+  }
+  location @sso_signin {
+    return 302 https://${SSO_SESSION_DOMAIN}/api/sso/authorize?rd=https://$host$request_uri;
+  }
+
+  location / {
+    auth_request /__sso/verify;
+    error_page 401 = @sso_signin;
+
+    include /etc/nginx/snippets/proxy_headers.conf;
+    proxy_set_header Upgrade    $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_pass http://pgadmin.trello_internal:80;
+  }
+}
+
+# Portainer (:9000). Admin SSO-gated; Portainer keeps its own login on top.
+# Needs websockets (container console/stats stream).
+server {
+  listen 80;
+  server_name portainer.${DOMAIN} stage-portainer.${DOMAIN};
+
+  access_log /dev/stdout main_json;
+  error_log /dev/stderr;
+
+  location = /__sso/verify {
+    internal;
+    proxy_pass http://backend.trello_internal:4000/api/sso/verify;
+    proxy_set_header Host $host;
+    proxy_pass_request_body off;
+    proxy_set_header Content-Length "";
+  }
+  location = /__sso/callback {
+    proxy_pass http://backend.trello_internal:4000/api/sso/callback;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+  }
+  location @sso_signin {
+    return 302 https://${SSO_SESSION_DOMAIN}/api/sso/authorize?rd=https://$host$request_uri;
+  }
+
+  location / {
+    auth_request /__sso/verify;
+    error_page 401 = @sso_signin;
+
+    include /etc/nginx/snippets/proxy_headers.conf;
+    proxy_set_header Upgrade    $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_pass http://portainer.trello_internal:9000;
+  }
+}

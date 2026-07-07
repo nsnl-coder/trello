@@ -9,11 +9,8 @@ COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY packages/landing/package.json packages/landing/
 RUN pnpm install --frozen-lockfile --filter landing...
 COPY . .
-# NEXT_PUBLIC_* are inlined at build time, so they must be present here.
-ARG NEXT_PUBLIC_APP_URL
-ARG NEXT_PUBLIC_SITE_URL
-ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL \
-    NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
+# NO tier baked at build: APP_URL/SITE_URL are read from process.env at RUNTIME
+# (the root layout is force-dynamic), so the image is byte-identical per tier.
 RUN pnpm --filter landing build
 
 # Next.js standalone server: minimal runtime, no pnpm/store needed.

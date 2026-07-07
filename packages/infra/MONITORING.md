@@ -12,7 +12,8 @@ Observability stack: **Loki** (logs) + **Tempo** (traces) + **Prometheus/Grafana
 
 | Tool | URL | Login |
 | --- | --- | --- |
-| Grafana | `http://<vps-ip>:3000` | `admin` / `GRAFANA_PASSWORD` in `packages/infra/.env` |
+| Grafana | `https://grafana.<domain>` (stage: `https://stage-grafana.<domain>`) | admin SSO (super-admin app session; see DEPLOY.md) |
+| Prometheus / cAdvisor / RedisInsight / pgAdmin / Portainer / MinIO | same scheme: `https://<tool>.<domain>` | admin SSO (+ the tool's own login where it has one) |
 | Sentry | org `that-nails-tech` | project `node-express` (BE), `javascript-react` (FE) |
 | Health | BE `/health`, `/health/ready` | - |
 
@@ -20,16 +21,16 @@ Observability stack: **Loki** (logs) + **Tempo** (traces) + **Prometheus/Grafana
 
 ## What's provisioned (versioned in git, deploy = it exists)
 
-### Datasources — `grafana/datasources.yaml`
+### Datasources — `docker/grafana/datasources.yaml`
 Loki (`uid: loki`), Tempo (`uid: tempo`), Prometheus (`uid: prometheus`, default).
 Loki -> Tempo derived field: click a log's `traceId` to jump to its trace.
 
-### Dashboards — `grafana/dashboards/` (folder "trelloclone" in Grafana)
+### Dashboards — `docker/grafana/dashboards/` (folder "trelloclone" in Grafana)
 - **Backend RED** (`red-backend`): request rate, 5xx rate, error %, latency p50/p95/p99, by route. Source metric: `http_request_duration_seconds` (prom-client).
 - **Containers & Host (USE)** (`containers-use`): per-container CPU/RAM (cAdvisor), host CPU/mem/disk (node-exporter), targets up.
 - **Logs overview** (`logs-overview`): error rate + error/all log panels, with a `service` dropdown (Loki).
 
-### Alert rules — `grafana/alerting/rules.yaml` (folder "trelloclone")
+### Alert rules — `docker/grafana/alerting/rules.yaml` (folder "trelloclone")
 | Rule | Condition |
 | --- | --- |
 | Backend down | `up{job="backend"} < 1` for 1m |
@@ -47,8 +48,9 @@ Rules exist but have no destination yet. In Grafana -> Alerting -> Contact point
 1. Add a contact point (Slack webhook or Telegram bot token + chat id).
 2. Alerting -> Notification policies -> set it as default (or route by `severity` label).
 
-To version it instead, add `grafana/alerting/contactpoints.yaml` (provisioned), keeping the
-webhook/token in `packages/infra/.env` and referencing it — do not commit the secret.
+To version it instead, add `docker/grafana/alerting/contactpoints.yaml` (provisioned), keeping
+the webhook/token in GitHub secrets (written to `/opt/trello/.env` by the deploy
+workflows) — do not commit the secret.
 
 ---
 
@@ -78,13 +80,16 @@ Pick datasource = Prometheus when prompted.
 
 ## Deploy / change
 
-Dashboards, alerts, datasources are provisioned from these files. After editing:
+Dashboards, alerts, datasources are provisioned from the files under
+`packages/infra/docker/`. The deploy workflows scp them to `/opt/trello/` on
+every deploy, so the normal path is: edit, commit, push a release tag (see
+`packages/infra/DEPLOY.md`). Grafana re-reads provisioning on start
+(dashboards also reload every 30s); to bounce it on a box:
 ```
-docker compose -f packages/infra/docker-compose.yml up -d grafana
+ssh <stage-vps|prod-vps> 'cd /opt/trello && docker compose up -d grafana'
 ```
-Grafana re-reads provisioning on start (dashboards also reload every 30s).
 
 Notes:
-- Set `SENTRY_RELEASE=$(git rev-parse --short HEAD)` when deploying so source maps match.
+- `SENTRY_RELEASE` (git sha) is set by the deploy workflows, so source maps match automatically.
 - `/metrics` is internal only (Prometheus scrapes over the Docker network); never expose via nginx.
-- Dev retention short (~7d), prod longer (~30d); chunks in Minio.
+- Stage retention short (~7d), prod longer (~30d); chunks in Minio.
