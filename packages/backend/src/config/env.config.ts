@@ -1,19 +1,30 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
-// Single deployment-tier knob (root .env.{local,dev,prod}). Drives log format,
-// docs, Sentry env, trace sampling, and cookie security. NODE_ENV is left to
+// Single local env file: the repo-root .env (documented in .env.example).
+// Resolved relative to this module so it works from src/ (tsx) and dist/
+// (node) alike, whatever the cwd. In docker the values are injected by
+// compose (env_file/environment) and REAL env always wins over file values;
+// on a deployed box there is no repo .env, so this is a silent no-op.
+dotenv.config({
+  path: fileURLToPath(new URL('../../../../.env', import.meta.url)),
+});
+
+// Single deployment-tier knob (repo-root .env locally; /opt/trello/.env on a
+// deployed box, written by the deploy workflow). Drives log format, docs,
+// Sentry env, trace sampling, and cookie security. NODE_ENV is left to
 // libraries only.
-const VPS_ENVS = ['local', 'dev', 'prod'] as const;
+const VPS_ENVS = ['local', 'stage', 'prod'] as const;
 type VpsEnv = (typeof VPS_ENVS)[number];
 const vpsEnv = (process.env.VPS_ENV ?? 'local') as VpsEnv;
 if (!VPS_ENVS.includes(vpsEnv)) {
   throw new Error(
-    `Invalid VPS_ENV: ${process.env.VPS_ENV} (expected local|dev|prod)`,
+    `Invalid VPS_ENV: ${process.env.VPS_ENV} (expected local|stage|prod)`,
   );
 }
 const isLocal = vpsEnv === 'local';
-const tier = vpsEnv.toUpperCase(); // LOCAL | DEV | PROD
+const tier = vpsEnv.toUpperCase(); // LOCAL | STAGE | PROD
 
 // Resolve per-tier inputs from a single .env: KEY_<TIER> wins, else the shared
 // plain KEY. So only secrets that differ across tiers need a suffix.
@@ -60,8 +71,8 @@ const schema = z.object({
   DATABASE_URL: url('postgres://postgres:postgres@localhost:5432/trelloclone'),
 
   // Secrets are ALWAYS required (no env-gated default) so a misconfigured
-  // tier can never fall back to a committed signing key. Set them in
-  // .env for dev (JWT_*_SECRET_LOCAL); tests inject them via vitest.config.ts.
+  // tier can never fall back to a committed signing key. Set them in the
+  // repo-root .env for local dev; tests inject them via vitest.config.ts.
   JWT_ACCESS_SECRET: z.string().min(32),
   JWT_REFRESH_SECRET: z.string().min(32),
 
@@ -82,14 +93,14 @@ const schema = z.object({
   SUPER_ADMIN_EMAIL: z.string().email().or(z.literal('')).default(''),
   SUPER_ADMIN_PASSWORD: z.string().min(8).or(z.literal('')).default(''),
 
-  // Mail transport varies by tier: shared sandbox for local+dev (plain KEY),
+  // Mail transport varies by tier: shared sandbox for local+stage (plain KEY),
   // real provider for prod (KEY_PROD). Resolved by tiered() above.
   MAIL_HOST: z.string().default('sandbox.smtp.mailtrap.io'),
   MAIL_USER: z.string().default(''),
   MAIL_PASS: z.string().default(''),
 
   // --- Observability (all optional; absence = local/off behaviour) ---
-  // Override Pino level; empty -> derived from VPS_ENV (debug local/dev, info prod).
+  // Override Pino level; empty -> derived from VPS_ENV (debug local/stage, info prod).
   LOG_LEVEL: z.string().default(''),
   // OTLP traces endpoint (Tempo). Empty -> ConsoleSpanExporter, no Tempo (local).
   OTEL_EXPORTER_OTLP_ENDPOINT: z.string().default(''),

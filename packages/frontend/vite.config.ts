@@ -7,6 +7,10 @@ import { sentryVitePlugin } from "@sentry/vite-plugin";
 const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN;
 const sentryRelease = process.env.SENTRY_RELEASE;
 
+// Dev-proxy upstream: localhost when Vite runs on the host, the backend
+// service name when it runs inside the local docker stack (compose sets it).
+const proxyTarget = process.env.VITE_PROXY_TARGET ?? "http://localhost:4000";
+
 export default defineConfig({
   // Emit source maps so Sentry can de-minify stack traces. The Sentry plugin
   // uploads them then deletes them from dist (filesToDeleteAfterUpload), so they
@@ -39,7 +43,7 @@ export default defineConfig({
       // tRPC + REST (incl. /api/client-log and the Drive OAuth callback) go to
       // the backend in dev; nginx does this in deployed envs.
       "/trpc": {
-        target: "http://localhost:4000",
+        target: proxyTarget,
         changeOrigin: true,
         configure: (proxy) => {
           proxy.on("error", (err, _req, res) => {
@@ -53,7 +57,7 @@ export default defineConfig({
           });
         },
       },
-      "/api": { target: "http://localhost:4000", changeOrigin: true },
+      "/api": { target: proxyTarget, changeOrigin: true },
     },
   },
 });

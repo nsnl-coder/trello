@@ -11,3 +11,8 @@
 .github
 e2e
 **/*.log
+# Never let the local env file leak into build layers (images are env-free;
+# all config arrives at runtime).
+.env
+.env.*
+!.env.example

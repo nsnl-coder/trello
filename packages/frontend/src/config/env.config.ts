@@ -1,42 +1,52 @@
-const env = import.meta.env;
+// Runtime deployment config. /config.js (loaded by index.html before the app
+// bundle) sets window.__ENV__; the nginx image re-renders that file from the
+// container env at startup (packages/infra/docker/nginx/40-render-config.sh),
+// so ONE built image is byte-identical across tiers — nothing is baked at
+// build. Local dev serves the committed defaults in public/config.js.
+type RuntimeEnv = {
+  APP_ENV?: string; // local | stage | prod
+  DOMAIN?: string; // registrable domain, e.g. example.com (empty locally)
+  HOST_PREFIX?: string; // subdomain prefix: "stage-" on stage, "" on prod
+};
 
-// Deployment tier = the Vite mode (no env var needed):
-//   `vite` (dev server)      -> local (Vite's default "development" mode;
-//                               "local" can't be a mode name in Vite 6)
-//   `vite build --mode dev`  -> dev
-//   `vite build --mode prod` -> prod
-const appEnv: "local" | "dev" | "prod" =
-  env.MODE === "prod"
+declare global {
+  interface Window {
+    __ENV__?: RuntimeEnv;
+  }
+}
+
+const runtime: RuntimeEnv =
+  (typeof window !== "undefined" && window.__ENV__) || {};
+
+const appEnv: "local" | "stage" | "prod" =
+  runtime.APP_ENV === "prod"
     ? "prod"
-    : env.MODE === "dev"
-      ? "dev"
-      : "local"; // "development" (Vite default) and anything else -> local
+    : runtime.APP_ENV === "stage"
+      ? "stage"
+      : "local"; // missing config.js / anything else -> local
 const isLocal = appEnv === "local";
 
-// Per-tier API origin: the only value that differs per tier (dev is
-// cross-origin; local/prod are same-origin). Literal refs so Vite can inline.
-const apiUrl =
-  appEnv === "prod"
-    ? (env.VITE_API_URL_PROD as string | undefined) ?? "/trpc"
-    : appEnv === "dev"
-      ? (env.VITE_API_URL_DEV as string | undefined) ?? "/trpc"
-      : (env.VITE_API_URL_LOCAL as string | undefined) ?? "/trpc";
+// Same-origin everywhere: nginx (deployed) / the Vite dev proxy (local)
+// forward /trpc + /api to the backend, so no per-tier API origin is needed.
+const apiUrl = "/trpc";
 
 // Observability/ops consoles on sibling subdomains (admin SSO-gated). null
-// locally (no such hosts); per-tier domains otherwise. Used by the admin nav.
-function consoleHosts(prefix: string) {
-  return {
-    grafana: `https://${prefix}grafana.trello-clone.shop`,
-    minio: `https://${prefix}minio.trello-clone.shop`,
-    redis: `https://${prefix}redis.trello-clone.shop`,
-    prometheus: `https://${prefix}prometheus.trello-clone.shop`,
-    cadvisor: `https://${prefix}cadvisor.trello-clone.shop`,
-    pgadmin: `https://${prefix}pgadmin.trello-clone.shop`,
-    portainer: `https://${prefix}portainer.trello-clone.shop`,
-  };
-}
+// locally (no such hosts); derived from the runtime DOMAIN otherwise. Used by
+// the admin Monitor tab.
+const consoleHost = (svc: string) =>
+  `https://${runtime.HOST_PREFIX ?? ""}${svc}.${runtime.DOMAIN}`;
 const opsConsoles =
-  appEnv === "prod" ? consoleHosts("") : appEnv === "dev" ? consoleHosts("dev-") : null;
+  isLocal || !runtime.DOMAIN
+    ? null
+    : {
+        grafana: consoleHost("grafana"),
+        minio: consoleHost("minio"),
+        redis: consoleHost("redis"),
+        prometheus: consoleHost("prometheus"),
+        cadvisor: consoleHost("cadvisor"),
+        pgadmin: consoleHost("pgadmin"),
+        portainer: consoleHost("portainer"),
+      };
 
 export const config = {
   apiUrl,
@@ -44,10 +54,10 @@ export const config = {
   opsConsoles,
   // SSE/OpenAPI base. tRPC lives at `<base>/trpc`; the REST/SSE routes live at
   // `<base>/api`. Derive by swapping the trailing `/trpc` so no new env var is
-  // needed (local: backend-origin/api; prod same-origin: /api).
+  // needed (local: backend-origin/api; deployed same-origin: /api).
   apiBaseUrl: apiUrl.replace(/\/trpc$/, "") + "/api",
   appEnv,
-  isDev: env.DEV,
+  isDev: import.meta.env.DEV,
   // Public OTLP path (nginx -> Tempo). Empty locally -> no trace export.
   otelEndpoint: isLocal ? "" : "/otlp",
   // Public Sentry DSN (same on every tier). Sentry stays disabled locally via
