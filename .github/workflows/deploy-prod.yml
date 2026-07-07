@@ -1,0 +1,177 @@
+name: Deploy to Production
+
+# Push a final tag (vX.Y.Z, NO -rc): NO rebuild — promote the exact images
+# already built and tested on staging (found by commit SHA) to the final tag,
+# then ssh into the prod VPS to pull + migrate + run.
+# See packages/infra/DEPLOY.md.
+on:
+  push:
+    tags:
+      # GitHub glob: [0-9]+ = one-or-more digits; tags with '-rc.N' don't match.
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+concurrency:
+  # Namespaced per app: the runner box is shared, other repos have their own
+  # deploy groups.
+  group: deploy-trello-prod
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    # The shared build box runs one runner per repo; target ours by label.
+    runs-on: [self-hosted, trello]
+    environment: prod
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: packages/infra/docker
+    env:
+      REGISTRY: ${{ secrets.DOCKERHUB_USERNAME }}
+      IMAGE_TAG: ${{ github.ref_name }}
+      # Runtime env for prod (written to /opt/trello/.env on the box).
+      # Domain stays out of the repo (GitHub Actions variable) — every host is
+      # derived from DOMAIN + HOST_PREFIX in docker-compose.yml.
+      APP_ENV: prod
+      HOST_PREFIX: ''
+      DOMAIN: ${{ vars.DOMAIN }}
+      # Landing lives on the apex in prod.
+      SITE_URL: https://${{ vars.DOMAIN }}
+      POSTGRES_USER: trello
+      POSTGRES_DB: trello
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+      # Per-tier signing secrets (suffixed repo secrets; plain keys on the box).
+      JWT_ACCESS_SECRET: ${{ secrets.JWT_ACCESS_SECRET_PROD }}
+      JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET_PROD }}
+      SSO_SECRET: ${{ secrets.SSO_SECRET_PROD }}
+      SUPER_ADMIN_EMAIL: ${{ secrets.SUPER_ADMIN_EMAIL }}
+      SUPER_ADMIN_PASSWORD: ${{ secrets.SUPER_ADMIN_PASSWORD_PROD }}
+      MINIO_ACCESS_KEY: ${{ secrets.MINIO_ACCESS_KEY }}
+      MINIO_SECRET_KEY: ${{ secrets.MINIO_SECRET_KEY }}
+      # Real mail provider on prod via the MAIL_HOST variable (empty ->
+      # Mailtrap sandbox default).
+      MAIL_HOST: ${{ vars.MAIL_HOST }}
+      MAIL_USER: ${{ secrets.MAIL_USER }}
+      MAIL_PASS: ${{ secrets.MAIL_PASS }}
+      SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+      # Ops consoles + alerting
+      GRAFANA_PASSWORD: ${{ secrets.GRAFANA_PASSWORD }}
+      PGADMIN_DEFAULT_PASSWORD: ${{ secrets.PGADMIN_DEFAULT_PASSWORD }}
+      PORTAINER_ADMIN_PASSWORD_HASH: ${{ secrets.PORTAINER_ADMIN_PASSWORD_HASH }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      # Optional features (empty -> disabled in the app)
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
+      GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
+      BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+      MINIO_BACKUP_BUCKETS: ${{ vars.MINIO_BACKUP_BUCKETS }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Guard against rc tags
+        run: |
+          case "$IMAGE_TAG" in
+            *-rc.*) echo "::error::$IMAGE_TAG is an RC tag; prod only deploys final vX.Y.Z tags"; exit 1 ;;
+          esac
+
+      # Same release id the stage build baked in (sha of the promoted commit).
+      - name: Resolve Sentry release
+        run: echo "SENTRY_RELEASE=sha-${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      # Promote the 3 tested images (by the commit SHA the final tag points at)
+      # to the final tag. NO rebuild: the digest that ran on staging is the
+      # digest that runs in prod.
+      - name: Promote tested images
+        run: |
+          SHA="sha-${GITHUB_SHA::7}"
+          for img in backend frontend landing; do
+            SRC="$REGISTRY/trello-$img:$SHA"
+            if ! docker pull "$SRC"; then
+              echo "::error::$SRC not found — the commit of $IMAGE_TAG was never built/tested on staging (push a vX.Y.Z-rc.N tag from this commit first)."
+              exit 1
+            fi
+            docker tag "$SRC" "$REGISTRY/trello-$img:$IMAGE_TAG"
+            docker push "$REGISTRY/trello-$img:$IMAGE_TAG"
+          done
+
+      # Ship compose + observability config + .env to the prod VPS, log in to
+      # the registry, then pull + migrate + up.
+      - name: Deploy to prod VPS
+        run: |
+          ssh prod-vps 'mkdir -p /opt/trello'
+          scp -r docker-compose.yml grafana loki tempo prometheus vector prod-vps:/opt/trello/
+          {
+            echo "REGISTRY=$REGISTRY"
+            echo "IMAGE_TAG=$IMAGE_TAG"
+            echo "APP_ENV=$APP_ENV"
+            echo "DOMAIN=$DOMAIN"
+            echo "HOST_PREFIX=$HOST_PREFIX"
+            echo "SITE_URL=$SITE_URL"
+            echo "SENTRY_RELEASE=$SENTRY_RELEASE"
+            echo "POSTGRES_USER=$POSTGRES_USER"
+            echo "POSTGRES_DB=$POSTGRES_DB"
+            echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD"
+            echo "JWT_ACCESS_SECRET=$JWT_ACCESS_SECRET"
+            echo "JWT_REFRESH_SECRET=$JWT_REFRESH_SECRET"
+            echo "SSO_SECRET=$SSO_SECRET"
+            echo "SUPER_ADMIN_EMAIL=$SUPER_ADMIN_EMAIL"
+            echo "SUPER_ADMIN_PASSWORD=$SUPER_ADMIN_PASSWORD"
+            echo "MINIO_ACCESS_KEY=$MINIO_ACCESS_KEY"
+            echo "MINIO_SECRET_KEY=$MINIO_SECRET_KEY"
+            echo "MAIL_HOST=$MAIL_HOST"
+            echo "MAIL_USER=$MAIL_USER"
+            echo "MAIL_PASS=$MAIL_PASS"
+            echo "SENTRY_DSN=$SENTRY_DSN"
+            echo "GRAFANA_PASSWORD=$GRAFANA_PASSWORD"
+            echo "PGADMIN_DEFAULT_PASSWORD=$PGADMIN_DEFAULT_PASSWORD"
+            echo "PORTAINER_ADMIN_PASSWORD_HASH=$PORTAINER_ADMIN_PASSWORD_HASH"
+            echo "TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN"
+            echo "TELEGRAM_CHAT_ID=$TELEGRAM_CHAT_ID"
+            echo "GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID"
+            echo "GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET"
+            echo "GDRIVE_CLIENT_ID=$GDRIVE_CLIENT_ID"
+            echo "GDRIVE_CLIENT_SECRET=$GDRIVE_CLIENT_SECRET"
+            echo "BACKUP_ENCRYPTION_PASSPHRASE=$BACKUP_ENCRYPTION_PASSPHRASE"
+            echo "MINIO_BACKUP_BUCKETS=$MINIO_BACKUP_BUCKETS"
+          } | ssh prod-vps 'umask 077; cat > /opt/trello/.env'
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | ssh prod-vps "docker login -u '${{ secrets.DOCKERHUB_USERNAME }}' --password-stdin"
+          ssh prod-vps 'cd /opt/trello \
+            && docker compose pull \
+            && docker compose run --rm backend node packages/backend/dist/scripts/migrate.script.js \
+            && docker compose up -d --remove-orphans \
+            && docker image prune -f'
+
+  notify:
+    name: Notify Telegram
+    needs: build-and-deploy
+    if: always()
+    runs-on: [self-hosted, trello]
+    environment: prod
+    steps:
+      - name: Send Telegram message
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          DEPLOY_RESULT: ${{ needs.build-and-deploy.result }}
+        run: |
+          if [ "$DEPLOY_RESULT" = "success" ]; then
+            STATUS="✅ PROD deploy succeeded"
+          else
+            STATUS="❌ PROD deploy failed ($DEPLOY_RESULT)"
+          fi
+          TEXT="$STATUS
+          Repo: $GITHUB_REPOSITORY
+          Tag: $GITHUB_REF_NAME
+          Commit: ${GITHUB_SHA:0:7}
+          Author: $GITHUB_ACTOR
+          Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          curl -sS --fail -X POST \
+            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
+            --data-urlencode text="${TEXT}" \
+            -d disable_web_page_preview=true
