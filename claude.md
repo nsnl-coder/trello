@@ -13,37 +13,39 @@ e2e/landing: store all e2e tests from packages/landing
 
 ## Required Infra
 
-- Nginx: for proxy
+- Nginx: for proxy (behind the shared Traefik on stage/prod)
 - Minio: for files storage
 - Postgres: for database -> in docker container
-- Required for dev & prod vps but not for local env: docker, redis, loki, vector, grafana, sentry, open telemetery & grafana tempo
+- Required for stage & prod vps but not for local env: docker, redis, loki, vector, grafana, sentry, open telemetery & grafana tempo
 
-# env rules for deploy to vps
+# env rules
 
-## Backend: one thin `.env`
+Keys are PLAIN — tiers differ by VALUE, not key name. Images are byte-identical
+across tiers: nothing tier-specific is baked at build; everything arrives at
+RUNTIME. Deploys are tag-driven via GitHub Actions (see
+`packages/infra/DEPLOY.md`): `vX.Y.Z-rc.N` -> stage, `vX.Y.Z` -> prod
+(promotes the stage-tested images, no rebuild).
 
-`packages/backend/.env` is the ONLY backend env file (local, dev, and prod).
+## Backend
 
-- Constants identical across tiers live in code (`src/config/env.config.ts`),
-  not in `.env`. Anything derivable from `VPS_ENV` is derived in code too.
-- `.env` holds only secrets + per-deployment values that cannot be figured in code.
-- Tier knob is `VPS_ENV` (local|dev|prod), guarded in `env.config.ts`. Locally it
-  comes from `.env`; on the VPS the container env injects it (overrides `.env`).
-- A value that differs per tier uses a `_LOCAL` / `_DEV` / `_PROD` suffix.
-  `env.config.ts` resolves `KEY_<TIER>` first, then falls back to plain `KEY`
-  (the shared value). Keys injected by docker `environment:` (MinIO creds, CORS,
-  SSO, REDIS, OTEL) stay plain in `infra/.env` and get no backend suffix.
+- Local (docker `make local` or host `pnpm --filter backend dev`): the
+  repo-root `.env` is the ONLY local env file (shape in `.env.example`).
+- Stage/prod: the deploy workflow writes `/opt/trello/.env` on the box from
+  GitHub secrets/vars on every deploy — never hand-edited, same plain keys.
+- Constants identical across tiers live in code (`src/config/env.config.ts`).
+  Anything derivable from the tier knob or `DOMAIN`+`HOST_PREFIX` is derived in
+  code/compose, not stored per key.
+- Tier knob is `VPS_ENV` (local|stage|prod), guarded in `env.config.ts`; the
+  workflows pass it as `APP_ENV` through compose.
 
-## Frontend: one `.env`
+## Frontend / landing
 
-`packages/frontend/.env` is the ONLY frontend env file (all tiers). Only `VITE_*`
-vars; no secrets.
-
-- Tier is derived from the Vite build mode in `src/config/env.config.ts`
-  (`--mode local` -> local; `--mode dev` -> dev; `--mode prod` -> prod), not from an env var.
-- Constants identical across tiers (Sentry DSN, OTLP path) live in code.
-- Only `VITE_API_URL` differs per tier, so the file carries
-  `VITE_API_URL_LOCAL` / `_DEV` / `_PROD` (referenced literally so Vite inlines them).
+No `.env` at all; no `VITE_*`/`NEXT_PUBLIC_*` tier values. The SPA reads
+`window.__ENV__` from `/config.js`, rendered by nginx from the container env at
+start (local defaults live in `packages/frontend/public/config.js`). The
+landing reads `APP_URL`/`SITE_URL` from `process.env` at runtime (root layout
+is force-dynamic). Constants identical across tiers (Sentry DSN, OTLP path)
+live in code.
 
 ## Always-on conventions
 
@@ -52,5 +54,5 @@ Always follow token discipline (short replies, scoped file reads, no rambling). 
 
 # Testing rules
 
-- e2e tests run against a live deployed site (dev + prod domains) driving a pre-seeded test user via the real UI. No separate test DB/MinIO; OTP flows read codes from the Mailtrap sandbox (used in dev AND prod). Destructive flows use throwaway sign-up emails / a dedicated reset account so they never disturb real users.
+- e2e tests run against a live deployed site (stage + prod domains) driving a pre-seeded test user via the real UI. No separate test DB/MinIO; OTP flows read codes from the Mailtrap sandbox (used in stage AND prod). Destructive flows use throwaway sign-up emails / a dedicated reset account so they never disturb real users.
 - in local environment, only run added test suites, do not run all test suites.
