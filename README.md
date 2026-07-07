@@ -11,6 +11,8 @@ my flagship project.
 **Try it — one click, no sign-up:** [app.trello-clone.shop/api/auth/demo](https://app.trello-clone.shop/api/auth/demo)
 drops you onto a pre-seeded board with a throwaway demo account (swept automatically after 7 days).
 
+![The demo board](docs/board-demo.png)
+
 ## Features
 
 - Drag-and-drop boards, lists, and cards (dnd-kit) with Markdown card descriptions
