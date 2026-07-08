@@ -1,6 +1,6 @@
-name: Deploy to Staging
+name: Deploy Kanbandiv — Staging
 
-# Push a release-candidate tag (vX.Y.Z-rc.N): the trello runner on the shared
+# Push a release-candidate tag (vX.Y.Z-rc.N): the kanbandiv runner on the shared
 # build box builds 3 byte-identical images, pushes them to Docker Hub, then
 # ssh's into the stage VPS to pull + migrate + run (stage does NOT build).
 # The tested images are also pushed under sha-<commit>, which deploy-prod.yml
@@ -13,7 +13,7 @@ on:
 concurrency:
   # Namespaced per app: the runner box is shared, other repos have their own
   # deploy groups.
-  group: deploy-trello-stage
+  group: deploy-kanbandiv-stage
   cancel-in-progress: false
 
 jobs:
@@ -90,11 +90,11 @@ jobs:
         run: |
           SHA="sha-${GITHUB_SHA::7}"
           for img in backend frontend landing; do
-            docker tag "$REGISTRY/trello-$img:$IMAGE_TAG" "$REGISTRY/trello-$img:$SHA"
+            docker tag "$REGISTRY/kanbandiv-$img:$IMAGE_TAG" "$REGISTRY/kanbandiv-$img:$SHA"
           done
           docker compose push backend nginx landing
           for img in backend frontend landing; do
-            docker push "$REGISTRY/trello-$img:$SHA"
+            docker push "$REGISTRY/kanbandiv-$img:$SHA"
           done
 
       # Ship compose + observability config + .env to the stage VPS, log in to

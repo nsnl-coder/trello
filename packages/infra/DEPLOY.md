@@ -44,7 +44,7 @@ Repo → Settings → Environments: create `stage` and `prod` (the jobs use
 Plain (shared by both tiers):
 
 - `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` — Docker Hub namespace + write token
-  (private repos `trello-backend`, `trello-frontend`, `trello-landing`)
+  (private repos `kanbandiv-backend`, `kanbandiv-frontend`, `kanbandiv-landing`)
 - `POSTGRES_PASSWORD`
 - `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`
 - `SUPER_ADMIN_EMAIL`

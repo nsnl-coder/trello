@@ -118,7 +118,7 @@ services:
     networks: [internal]
 
   backend:
-    image: ${REGISTRY}/trello-backend:${IMAGE_TAG}
+    image: ${REGISTRY}/kanbandiv-backend:${IMAGE_TAG}
     build:
       context: ../../..
       dockerfile: packages/infra/docker/Dockerfile.backend
@@ -196,7 +196,7 @@ services:
   # Public SEO/landing site (Next.js standalone server). Internal only; nginx
   # proxies the apex/stage host to it.
   landing:
-    image: ${REGISTRY}/trello-landing:${IMAGE_TAG}
+    image: ${REGISTRY}/kanbandiv-landing:${IMAGE_TAG}
     build:
       context: ../../..
       dockerfile: packages/infra/docker/Dockerfile.landing
@@ -216,7 +216,7 @@ services:
   # Traefik routes every *.${DOMAIN} host here over the 'edge' network; this
   # nginx splits by server_name (app/api/landing/admin consoles + SSO gate).
   nginx:
-    image: ${REGISTRY}/trello-frontend:${IMAGE_TAG}
+    image: ${REGISTRY}/kanbandiv-frontend:${IMAGE_TAG}
     build:
       context: ../../..
       dockerfile: packages/infra/docker/Dockerfile.nginx

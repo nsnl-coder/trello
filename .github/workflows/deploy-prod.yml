@@ -1,4 +1,4 @@
-name: Deploy to Production
+name: Deploy Kanbandiv — Production
 
 # Push a final tag (vX.Y.Z, NO -rc): NO rebuild — promote the exact images
 # already built and tested on staging (found by commit SHA) to the final tag,
@@ -13,7 +13,7 @@ on:
 concurrency:
   # Namespaced per app: the runner box is shared, other repos have their own
   # deploy groups.
-  group: deploy-trello-prod
+  group: deploy-kanbandiv-prod
   cancel-in-progress: false
 
 jobs:
@@ -90,13 +90,13 @@ jobs:
         run: |
           SHA="sha-${GITHUB_SHA::7}"
           for img in backend frontend landing; do
-            SRC="$REGISTRY/trello-$img:$SHA"
+            SRC="$REGISTRY/kanbandiv-$img:$SHA"
             if ! docker pull "$SRC"; then
               echo "::error::$SRC not found — the commit of $IMAGE_TAG was never built/tested on staging (push a vX.Y.Z-rc.N tag from this commit first)."
               exit 1
             fi
-            docker tag "$SRC" "$REGISTRY/trello-$img:$IMAGE_TAG"
-            docker push "$REGISTRY/trello-$img:$IMAGE_TAG"
+            docker tag "$SRC" "$REGISTRY/kanbandiv-$img:$IMAGE_TAG"
+            docker push "$REGISTRY/kanbandiv-$img:$IMAGE_TAG"
           done
 
       # Ship compose + observability config + .env to the prod VPS, log in to
