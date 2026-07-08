@@ -4,7 +4,7 @@ type = "docker_logs"
 # Shared VPS: only read THIS compose project's containers (compose auto-labels
 # every container it starts), so other apps' logs are never ingested and their
 # own log pipelines are not duplicated.
-include_labels = ["com.docker.compose.project=trello"]
+include_labels = ["com.docker.compose.project=kanbandiv"]
 
 [transforms.add_labels]
 type = "remap"

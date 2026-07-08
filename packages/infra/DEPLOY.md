@@ -21,7 +21,7 @@ git tag v1.2.0 <tested-commit> && git push origin v1.2.0   # -> PROD
 Migrations run before `up` on every deploy (idempotent):
 `docker compose run --rm backend node packages/backend/dist/scripts/migrate.script.js`
 
-Everything tier-specific arrives at **runtime** via `/opt/trello/.env`
+Everything tier-specific arrives at **runtime** via `/opt/kanbandiv/.env`
 (written by the workflow from job env on every deploy — never hand-edited):
 the SPA reads `/config.js` (rendered by nginx at container start), the landing
 reads `process.env` (force-dynamic layout), the backend reads its env.
@@ -81,7 +81,7 @@ Stage box (same set, stage naming):
 `stage-portainer`
 
 Traefik has ONE router for the app (`HostRegexp` over `${DOMAIN}` and any
-subdomain); trello's own nginx splits by `server_name`, so adding a subdomain
+subdomain); kanbandiv's own nginx splits by `server_name`, so adding a subdomain
 = DNS record + nginx server block, no Traefik change.
 
 ## VPS prerequisites (once per box)
@@ -94,11 +94,11 @@ Traefik owns ports 80/443; every app joins the external `edge` network.
 2. A Cloudflare **Origin certificate** covering `${DOMAIN}` + `*.${DOMAIN}`
    installed in Traefik's cert store (file provider), so it can terminate TLS
    for every host above.
-3. `mkdir -p /opt/trello` (the workflow scp's `docker-compose.yml` + the
+3. `mkdir -p /opt/kanbandiv` (the workflow scp's `docker-compose.yml` + the
    grafana/loki/tempo/prometheus/vector config dirs there and writes `.env`).
 4. On the **build box**: a per-repo self-hosted GitHub runner registered for
-   this repo with `--labels trello` (workflows target
-   `runs-on: [self-hosted, trello]`), plus ssh config so `stage-vps` and
+   this repo with `--labels kanbandiv` (workflows target
+   `runs-on: [self-hosted, kanbandiv]`), plus ssh config so `stage-vps` and
    `prod-vps` resolve from the runner user (root on the target boxes), and
    docker available to the runner.
 
@@ -136,5 +136,5 @@ make logs / make ps / make health / make down
 
 Host-side `pnpm --filter backend dev` also works and reads the same root
 `.env` (see `env.config.ts`). There is no `packages/backend/.env` or
-`packages/infra/.env` anymore; deployed tiers use `/opt/trello/.env` written
+`packages/infra/.env` anymore; deployed tiers use `/opt/kanbandiv/.env` written
 by the workflows.

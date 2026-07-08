@@ -49,7 +49,7 @@ Rules exist but have no destination yet. In Grafana -> Alerting -> Contact point
 2. Alerting -> Notification policies -> set it as default (or route by `severity` label).
 
 To version it instead, add `docker/grafana/alerting/contactpoints.yaml` (provisioned), keeping
-the webhook/token in GitHub secrets (written to `/opt/trello/.env` by the deploy
+the webhook/token in GitHub secrets (written to `/opt/kanbandiv/.env` by the deploy
 workflows) — do not commit the secret.
 
 ---
@@ -81,12 +81,12 @@ Pick datasource = Prometheus when prompted.
 ## Deploy / change
 
 Dashboards, alerts, datasources are provisioned from the files under
-`packages/infra/docker/`. The deploy workflows scp them to `/opt/trello/` on
+`packages/infra/docker/`. The deploy workflows scp them to `/opt/kanbandiv/` on
 every deploy, so the normal path is: edit, commit, push a release tag (see
 `packages/infra/DEPLOY.md`). Grafana re-reads provisioning on start
 (dashboards also reload every 30s); to bounce it on a box:
 ```
-ssh <stage-vps|prod-vps> 'cd /opt/trello && docker compose up -d grafana'
+ssh <stage-vps|prod-vps> 'cd /opt/kanbandiv && docker compose up -d grafana'
 ```
 
 Notes:

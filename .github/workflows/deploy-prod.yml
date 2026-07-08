@@ -19,7 +19,7 @@ concurrency:
 jobs:
   build-and-deploy:
     # The shared build box runs one runner per repo; target ours by label.
-    runs-on: [self-hosted, trello]
+    runs-on: [self-hosted, kanbandiv]
     environment: prod
     timeout-minutes: 40
     defaults:
@@ -28,7 +28,7 @@ jobs:
     env:
       REGISTRY: ${{ secrets.DOCKERHUB_USERNAME }}
       IMAGE_TAG: ${{ github.ref_name }}
-      # Runtime env for prod (written to /opt/trello/.env on the box).
+      # Runtime env for prod (written to /opt/kanbandiv/.env on the box).
       # Domain stays out of the repo (GitHub Actions variable) — every host is
       # derived from DOMAIN + HOST_PREFIX in docker-compose.yml.
       APP_ENV: prod
@@ -36,8 +36,8 @@ jobs:
       DOMAIN: ${{ vars.DOMAIN }}
       # Landing lives on the apex in prod.
       SITE_URL: https://${{ vars.DOMAIN }}
-      POSTGRES_USER: trello
-      POSTGRES_DB: trello
+      POSTGRES_USER: kanbandiv
+      POSTGRES_DB: kanbandiv
       POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
       # Per-tier signing secrets (suffixed repo secrets; plain keys on the box).
       JWT_ACCESS_SECRET: ${{ secrets.JWT_ACCESS_SECRET_PROD }}
@@ -103,8 +103,8 @@ jobs:
       # the registry, then pull + migrate + up.
       - name: Deploy to prod VPS
         run: |
-          ssh prod-vps 'mkdir -p /opt/trello'
-          scp -r docker-compose.yml grafana loki tempo prometheus vector prod-vps:/opt/trello/
+          ssh prod-vps 'mkdir -p /opt/kanbandiv'
+          scp -r docker-compose.yml grafana loki tempo prometheus vector prod-vps:/opt/kanbandiv/
           {
             echo "REGISTRY=$REGISTRY"
             echo "IMAGE_TAG=$IMAGE_TAG"
@@ -138,9 +138,9 @@ jobs:
             echo "GDRIVE_CLIENT_SECRET=$GDRIVE_CLIENT_SECRET"
             echo "BACKUP_ENCRYPTION_PASSPHRASE=$BACKUP_ENCRYPTION_PASSPHRASE"
             echo "MINIO_BACKUP_BUCKETS=$MINIO_BACKUP_BUCKETS"
-          } | ssh prod-vps 'umask 077; cat > /opt/trello/.env'
+          } | ssh prod-vps 'umask 077; cat > /opt/kanbandiv/.env'
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | ssh prod-vps "docker login -u '${{ secrets.DOCKERHUB_USERNAME }}' --password-stdin"
-          ssh prod-vps 'cd /opt/trello \
+          ssh prod-vps 'cd /opt/kanbandiv \
             && docker compose pull \
             && docker compose run --rm backend node packages/backend/dist/scripts/migrate.script.js \
             && docker compose up -d --remove-orphans \
@@ -150,7 +150,7 @@ jobs:
     name: Notify Telegram
     needs: build-and-deploy
     if: always()
-    runs-on: [self-hosted, trello]
+    runs-on: [self-hosted, kanbandiv]
     environment: prod
     steps:
       - name: Send Telegram message

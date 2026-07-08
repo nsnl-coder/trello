@@ -109,8 +109,8 @@ sum(rate(http_request_duration_seconds_count[5m]))                              
 sum(rate(http_request_duration_seconds_count{status=~"5.."}[5m]))                    # Errors
 histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))  # Duration p95
 sum(rate(http_request_duration_seconds_count[5m])) by (route)                        # theo endpoint
-rate(container_cpu_usage_seconds_total{name=~"trelloclone3.*"}[5m])                  # CPU container (cAdvisor)
-container_memory_usage_bytes{name=~"trelloclone3.*"}                                 # RAM container
+rate(container_cpu_usage_seconds_total{name=~"kanbandiv.*"}[5m])                  # CPU container (cAdvisor)
+container_memory_usage_bytes{name=~"kanbandiv.*"}                                 # RAM container
 ```
 
 ---

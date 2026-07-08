@@ -19,7 +19,7 @@ concurrency:
 jobs:
   build-and-deploy:
     # The shared build box runs one runner per repo; target ours by label.
-    runs-on: [self-hosted, trello]
+    runs-on: [self-hosted, kanbandiv]
     environment: stage
     timeout-minutes: 40
     defaults:
@@ -28,7 +28,7 @@ jobs:
     env:
       REGISTRY: ${{ secrets.DOCKERHUB_USERNAME }}
       IMAGE_TAG: ${{ github.ref_name }}
-      # Runtime env for staging (written to /opt/trello/.env on the box).
+      # Runtime env for staging (written to /opt/kanbandiv/.env on the box).
       # Domain stays out of the repo (GitHub Actions variable) — every host is
       # derived from DOMAIN + HOST_PREFIX in docker-compose.yml.
       APP_ENV: stage
@@ -36,8 +36,8 @@ jobs:
       DOMAIN: ${{ vars.DOMAIN }}
       # Landing origin is not prefix-derivable (prod uses the apex).
       SITE_URL: https://stage.${{ vars.DOMAIN }}
-      POSTGRES_USER: trello
-      POSTGRES_DB: trello
+      POSTGRES_USER: kanbandiv
+      POSTGRES_DB: kanbandiv
       POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
       # Per-tier signing secrets (suffixed repo secrets; plain keys on the box).
       JWT_ACCESS_SECRET: ${{ secrets.JWT_ACCESS_SECRET_STAGE }}
@@ -101,8 +101,8 @@ jobs:
       # the registry, then pull + migrate + up.
       - name: Deploy to staging VPS
         run: |
-          ssh stage-vps 'mkdir -p /opt/trello'
-          scp -r docker-compose.yml grafana loki tempo prometheus vector stage-vps:/opt/trello/
+          ssh stage-vps 'mkdir -p /opt/kanbandiv'
+          scp -r docker-compose.yml grafana loki tempo prometheus vector stage-vps:/opt/kanbandiv/
           {
             echo "REGISTRY=$REGISTRY"
             echo "IMAGE_TAG=$IMAGE_TAG"
@@ -136,9 +136,9 @@ jobs:
             echo "GDRIVE_CLIENT_SECRET=$GDRIVE_CLIENT_SECRET"
             echo "BACKUP_ENCRYPTION_PASSPHRASE=$BACKUP_ENCRYPTION_PASSPHRASE"
             echo "MINIO_BACKUP_BUCKETS=$MINIO_BACKUP_BUCKETS"
-          } | ssh stage-vps 'umask 077; cat > /opt/trello/.env'
+          } | ssh stage-vps 'umask 077; cat > /opt/kanbandiv/.env'
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | ssh stage-vps "docker login -u '${{ secrets.DOCKERHUB_USERNAME }}' --password-stdin"
-          ssh stage-vps 'cd /opt/trello \
+          ssh stage-vps 'cd /opt/kanbandiv \
             && docker compose pull \
             && docker compose run --rm backend node packages/backend/dist/scripts/migrate.script.js \
             && docker compose up -d --remove-orphans \
@@ -148,7 +148,7 @@ jobs:
     name: Notify Telegram
     needs: build-and-deploy
     if: always()
-    runs-on: [self-hosted, trello]
+    runs-on: [self-hosted, kanbandiv]
     environment: stage
     steps:
       - name: Send Telegram message

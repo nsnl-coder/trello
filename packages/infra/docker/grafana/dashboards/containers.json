@@ -21,7 +21,7 @@
         {
           "refId": "A",
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(rate(container_cpu_usage_seconds_total{name=~\"trelloclone3.*\"}[5m])) by (name)",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{name=~\"kanbandiv.*\"}[5m])) by (name)",
           "legendFormat": "{{name}}"
         }
       ]
@@ -37,7 +37,7 @@
         {
           "refId": "A",
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(container_memory_working_set_bytes{name=~\"trelloclone3.*\"}) by (name)",
+          "expr": "sum(container_memory_working_set_bytes{name=~\"kanbandiv.*\"}) by (name)",
           "legendFormat": "{{name}}"
         }
       ]

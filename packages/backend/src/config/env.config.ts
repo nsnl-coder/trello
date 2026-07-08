@@ -11,7 +11,7 @@ dotenv.config({
   path: fileURLToPath(new URL('../../../../.env', import.meta.url)),
 });
 
-// Single deployment-tier knob (repo-root .env locally; /opt/trello/.env on a
+// Single deployment-tier knob (repo-root .env locally; /opt/kanbandiv/.env on a
 // deployed box, written by the deploy workflow). Drives log format, docs,
 // Sentry env, trace sampling, and cookie security. NODE_ENV is left to
 // libraries only.

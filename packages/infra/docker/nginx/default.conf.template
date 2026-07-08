@@ -23,10 +23,10 @@
 #   consoles    grafana|minio|redis|prometheus|cadvisor|pgadmin|portainer
 #               .${DOMAIN}                     | stage-<same>.${DOMAIN}
 #
-# Upstreams use network-scoped names (backend.trello_internal, ...): this nginx
+# Upstreams use network-scoped names (backend.kanbandiv_internal, ...): this nginx
 # is on BOTH 'edge' (shared across apps) and 'internal'. Another app on edge
 # can also have a service named 'backend', and bare-name Docker DNS may return
-# THAT app's IP. Scoping to trello's internal network makes resolution
+# THAT app's IP. Scoping to kanbandiv's internal network makes resolution
 # unambiguous (lesson learned from manibook on the shared stage box).
 
 # Extract the bare trace-id (2nd field of W3C traceparent: version-traceId-
@@ -68,19 +68,19 @@ server {
   # tRPC API -> backend container
   location /trpc {
     include /etc/nginx/snippets/proxy_headers.conf;
-    proxy_pass http://backend.trello_internal:4000;
+    proxy_pass http://backend.kanbandiv_internal:4000;
   }
 
   # REST + /api/client-log + SSO/OAuth callbacks -> backend container
   location /api {
     include /etc/nginx/snippets/proxy_headers.conf;
-    proxy_pass http://backend.trello_internal:4000;
+    proxy_pass http://backend.kanbandiv_internal:4000;
   }
 
   # Browser OTLP traces -> Tempo (same-origin, so no CORS needed).
   location /otlp/ {
     include /etc/nginx/snippets/proxy_headers.conf;
-    proxy_pass http://tempo.trello_internal:4318/;
+    proxy_pass http://tempo.kanbandiv_internal:4318/;
   }
 
   # /metrics is internal-only (leaks traffic shape + endpoint inventory).
@@ -112,7 +112,7 @@ server {
 
   location / {
     include /etc/nginx/snippets/proxy_headers.conf;
-    proxy_pass http://backend.trello_internal:4000;
+    proxy_pass http://backend.kanbandiv_internal:4000;
   }
 }
 
@@ -126,7 +126,7 @@ server {
 
   location / {
     include /etc/nginx/snippets/proxy_headers.conf;
-    proxy_pass http://landing.trello_internal:3000;
+    proxy_pass http://landing.kanbandiv_internal:3000;
   }
 }
 
@@ -151,13 +151,13 @@ server {
 
   location = /__sso/verify {
     internal;
-    proxy_pass http://backend.trello_internal:4000/api/sso/verify;
+    proxy_pass http://backend.kanbandiv_internal:4000/api/sso/verify;
     proxy_set_header Host $host;
     proxy_pass_request_body off;
     proxy_set_header Content-Length "";
   }
   location = /__sso/callback {
-    proxy_pass http://backend.trello_internal:4000/api/sso/callback;
+    proxy_pass http://backend.kanbandiv_internal:4000/api/sso/callback;
     proxy_set_header Host $host;
     proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
   }
@@ -175,7 +175,7 @@ server {
     proxy_set_header X-WEBAUTH-User $sso_user;
     proxy_set_header Upgrade    $http_upgrade;
     proxy_set_header Connection $connection_upgrade;
-    proxy_pass http://grafana.trello_internal:3000;
+    proxy_pass http://grafana.kanbandiv_internal:3000;
   }
 }
 
@@ -193,13 +193,13 @@ server {
 
   location = /__sso/verify {
     internal;
-    proxy_pass http://backend.trello_internal:4000/api/sso/verify;
+    proxy_pass http://backend.kanbandiv_internal:4000/api/sso/verify;
     proxy_set_header Host $host;
     proxy_pass_request_body off;
     proxy_set_header Content-Length "";
   }
   location = /__sso/callback {
-    proxy_pass http://backend.trello_internal:4000/api/sso/callback;
+    proxy_pass http://backend.kanbandiv_internal:4000/api/sso/callback;
     proxy_set_header Host $host;
     proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
   }
@@ -214,7 +214,7 @@ server {
     include /etc/nginx/snippets/proxy_headers.conf;
     proxy_set_header Upgrade    $http_upgrade;
     proxy_set_header Connection $connection_upgrade;
-    proxy_pass http://minio.trello_internal:9001;
+    proxy_pass http://minio.kanbandiv_internal:9001;
   }
 }
 
@@ -229,13 +229,13 @@ server {
 
   location = /__sso/verify {
     internal;
-    proxy_pass http://backend.trello_internal:4000/api/sso/verify;
+    proxy_pass http://backend.kanbandiv_internal:4000/api/sso/verify;
     proxy_set_header Host $host;
     proxy_pass_request_body off;
     proxy_set_header Content-Length "";
   }
   location = /__sso/callback {
-    proxy_pass http://backend.trello_internal:4000/api/sso/callback;
+    proxy_pass http://backend.kanbandiv_internal:4000/api/sso/callback;
     proxy_set_header Host $host;
     proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
   }
@@ -250,7 +250,7 @@ server {
     include /etc/nginx/snippets/proxy_headers.conf;
     proxy_set_header Upgrade    $http_upgrade;
     proxy_set_header Connection $connection_upgrade;
-    proxy_pass http://redisinsight.trello_internal:5540;
+    proxy_pass http://redisinsight.kanbandiv_internal:5540;
   }
 }
 
@@ -264,13 +264,13 @@ server {
 
   location = /__sso/verify {
     internal;
-    proxy_pass http://backend.trello_internal:4000/api/sso/verify;
+    proxy_pass http://backend.kanbandiv_internal:4000/api/sso/verify;
     proxy_set_header Host $host;
     proxy_pass_request_body off;
     proxy_set_header Content-Length "";
   }
   location = /__sso/callback {
-    proxy_pass http://backend.trello_internal:4000/api/sso/callback;
+    proxy_pass http://backend.kanbandiv_internal:4000/api/sso/callback;
     proxy_set_header Host $host;
     proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
   }
@@ -283,7 +283,7 @@ server {
     error_page 401 = @sso_signin;
 
     include /etc/nginx/snippets/proxy_headers.conf;
-    proxy_pass http://prometheus.trello_internal:9090;
+    proxy_pass http://prometheus.kanbandiv_internal:9090;
   }
 }
 
@@ -297,13 +297,13 @@ server {
 
   location = /__sso/verify {
     internal;
-    proxy_pass http://backend.trello_internal:4000/api/sso/verify;
+    proxy_pass http://backend.kanbandiv_internal:4000/api/sso/verify;
     proxy_set_header Host $host;
     proxy_pass_request_body off;
     proxy_set_header Content-Length "";
   }
   location = /__sso/callback {
-    proxy_pass http://backend.trello_internal:4000/api/sso/callback;
+    proxy_pass http://backend.kanbandiv_internal:4000/api/sso/callback;
     proxy_set_header Host $host;
     proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
   }
@@ -316,7 +316,7 @@ server {
     error_page 401 = @sso_signin;
 
     include /etc/nginx/snippets/proxy_headers.conf;
-    proxy_pass http://cadvisor.trello_internal:8080;
+    proxy_pass http://cadvisor.kanbandiv_internal:8080;
   }
 }
 
@@ -333,13 +333,13 @@ server {
 
   location = /__sso/verify {
     internal;
-    proxy_pass http://backend.trello_internal:4000/api/sso/verify;
+    proxy_pass http://backend.kanbandiv_internal:4000/api/sso/verify;
     proxy_set_header Host $host;
     proxy_pass_request_body off;
     proxy_set_header Content-Length "";
   }
   location = /__sso/callback {
-    proxy_pass http://backend.trello_internal:4000/api/sso/callback;
+    proxy_pass http://backend.kanbandiv_internal:4000/api/sso/callback;
     proxy_set_header Host $host;
     proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
   }
@@ -354,7 +354,7 @@ server {
     include /etc/nginx/snippets/proxy_headers.conf;
     proxy_set_header Upgrade    $http_upgrade;
     proxy_set_header Connection $connection_upgrade;
-    proxy_pass http://pgadmin.trello_internal:80;
+    proxy_pass http://pgadmin.kanbandiv_internal:80;
   }
 }
 
@@ -369,13 +369,13 @@ server {
 
   location = /__sso/verify {
     internal;
-    proxy_pass http://backend.trello_internal:4000/api/sso/verify;
+    proxy_pass http://backend.kanbandiv_internal:4000/api/sso/verify;
     proxy_set_header Host $host;
     proxy_pass_request_body off;
     proxy_set_header Content-Length "";
   }
   location = /__sso/callback {
-    proxy_pass http://backend.trello_internal:4000/api/sso/callback;
+    proxy_pass http://backend.kanbandiv_internal:4000/api/sso/callback;
     proxy_set_header Host $host;
     proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
   }
@@ -390,6 +390,6 @@ server {
     include /etc/nginx/snippets/proxy_headers.conf;
     proxy_set_header Upgrade    $http_upgrade;
     proxy_set_header Connection $connection_upgrade;
-    proxy_pass http://portainer.trello_internal:9000;
+    proxy_pass http://portainer.kanbandiv_internal:9000;
   }
 }

@@ -1,4 +1,4 @@
-# trello clone — kanban app with production-grade observability
+# kanbandiv — kanban app with production-grade observability
 
 A full kanban board (boards → lists → cards) built to practice running a real service in
 production: every request is traced, metered, and logged, and the ops tooling ships with the

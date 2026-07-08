@@ -102,7 +102,7 @@ chunks only — no browser/presigned access).
 4. Access is **admin-gated by SSO** (see Grafana section): only a super-admin app
    session reaches the console; MinIO then prompts for its own root creds (it has
    no header-trust/auto-login mode).
-5. Deploy: `bash /opt/trello/deploy.sh`.
+5. Deploy: `bash /opt/kanbandiv/deploy.sh`.
 
 ## How to set up grafana in dev vps & prod vps
 
@@ -123,4 +123,4 @@ Grafana is published at the `grafana` subdomain with **admin SSO single sign-on*
    from the app session) -> host-bound token -> `/__sso/callback` sets a
    per-host SSO cookie -> Grafana auto-logs-in from `X-WEBAUTH-User`.
 5. Still loopback-bound on `127.0.0.1:3000` for SSH-tunnel fallback.
-6. Deploy: `bash /opt/trello/deploy.sh`.
+6. Deploy: `bash /opt/kanbandiv/deploy.sh`.

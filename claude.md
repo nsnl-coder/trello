@@ -30,7 +30,7 @@ RUNTIME. Deploys are tag-driven via GitHub Actions (see
 
 - Local (docker `make local` or host `pnpm --filter backend dev`): the
   repo-root `.env` is the ONLY local env file (shape in `.env.example`).
-- Stage/prod: the deploy workflow writes `/opt/trello/.env` on the box from
+- Stage/prod: the deploy workflow writes `/opt/kanbandiv/.env` on the box from
   GitHub secrets/vars on every deploy — never hand-edited, same plain keys.
 - Constants identical across tiers live in code (`src/config/env.config.ts`).
   Anything derivable from the tier knob or `DOMAIN`+`HOST_PREFIX` is derived in

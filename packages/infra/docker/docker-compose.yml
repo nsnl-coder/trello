@@ -3,7 +3,7 @@
 #
 # ONE compose for BOTH tiers (stage + prod) — each tier is its own VPS. Every
 # difference between the tiers arrives via the environment of the GitHub
-# Actions job, written to /opt/trello/.env on the box (see
+# Actions job, written to /opt/kanbandiv/.env on the box (see
 # .github/workflows/deploy-stage.yml and deploy-prod.yml):
 #   REGISTRY       Docker Hub namespace -> image names
 #   IMAGE_TAG      git tag being deployed (vX.Y.Z-rc.N on stage, vX.Y.Z on prod)
@@ -27,7 +27,7 @@
 # routes every *.${DOMAIN} Host to the nginx service. NOTHING here publishes a
 # host port — the VPS is shared with other apps and only Traefik owns 80/443.
 
-name: trello
+name: kanbandiv
 
 services:
   postgres:
@@ -76,7 +76,7 @@ services:
       RI_APP_PORT: '5540'
       RI_REDIS_HOST: redis
       RI_REDIS_PORT: '6379'
-      RI_REDIS_ALIAS: trello
+      RI_REDIS_ALIAS: kanbandiv
     volumes:
       - redisinsightdata:/data
     labels:
@@ -245,10 +245,10 @@ services:
       # Match apex + every subdomain of ${DOMAIN} (incl. stage-* on stage).
       # ${DOMAIN} is substituted by compose from .env; $$ = literal '$'
       # (the regex end anchor).
-      traefik.http.routers.trello.rule: 'HostRegexp(`^(.+\.)?${DOMAIN}$$`)'
-      traefik.http.routers.trello.entrypoints: websecure
-      traefik.http.routers.trello.tls: 'true'
-      traefik.http.services.trello.loadbalancer.server.port: '80'
+      traefik.http.routers.kanbandiv.rule: 'HostRegexp(`^(.+\.)?${DOMAIN}$$`)'
+      traefik.http.routers.kanbandiv.entrypoints: websecure
+      traefik.http.routers.kanbandiv.tls: 'true'
+      traefik.http.services.kanbandiv.loadbalancer.server.port: '80'
     depends_on: [backend, landing]
     networks:
       edge: {}
