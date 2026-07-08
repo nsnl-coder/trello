@@ -94,8 +94,11 @@ Traefik owns ports 80/443; every app joins the external `edge` network.
 2. A Cloudflare **Origin certificate** covering `${DOMAIN}` + `*.${DOMAIN}`
    installed in Traefik's cert store (file provider), so it can terminate TLS
    for every host above.
-3. `mkdir -p /opt/kanbandiv` (the workflow scp's `docker-compose.yml` + the
-   grafana/loki/tempo/prometheus/vector config dirs there and writes `.env`).
+3. `mkdir -p /opt/kanbandiv && chown deploy:deploy /opt/kanbandiv` — the runner
+   ssh's in as the non-root `deploy` user but `/opt` is root-owned, so the dir
+   must exist and be owned by `deploy` (else the workflow's `mkdir`/`scp` fails
+   with permission denied). The workflow then scp's `docker-compose.yml` + the
+   grafana/loki/tempo/prometheus/vector config dirs there and writes `.env`.
 4. On the **build box**: a per-repo self-hosted GitHub runner registered for
    this repo with `--labels kanbandiv` (workflows target
    `runs-on: [self-hosted, kanbandiv]`), plus ssh config so `stage-vps` and
