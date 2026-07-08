@@ -25,12 +25,12 @@ Observability stack: **Loki** (logs) + **Tempo** (traces) + **Prometheus/Grafana
 Loki (`uid: loki`), Tempo (`uid: tempo`), Prometheus (`uid: prometheus`, default).
 Loki -> Tempo derived field: click a log's `traceId` to jump to its trace.
 
-### Dashboards — `docker/grafana/dashboards/` (folder "trelloclone" in Grafana)
+### Dashboards — `docker/grafana/dashboards/` (folder "kanbandiv" in Grafana)
 - **Backend RED** (`red-backend`): request rate, 5xx rate, error %, latency p50/p95/p99, by route. Source metric: `http_request_duration_seconds` (prom-client).
 - **Containers & Host (USE)** (`containers-use`): per-container CPU/RAM (cAdvisor), host CPU/mem/disk (node-exporter), targets up.
 - **Logs overview** (`logs-overview`): error rate + error/all log panels, with a `service` dropdown (Loki).
 
-### Alert rules — `docker/grafana/alerting/rules.yaml` (folder "trelloclone")
+### Alert rules — `docker/grafana/alerting/rules.yaml` (folder "kanbandiv")
 | Rule | Condition |
 | --- | --- |
 | Backend down | `up{job="backend"} < 1` for 1m |

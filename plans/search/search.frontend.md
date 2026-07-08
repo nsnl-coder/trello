@@ -1,6 +1,6 @@
 # Global Search & Filters — Frontend Plan
 
-A global search launched from the app header (the "Trello Clone" brand bar in
+A global search launched from the app header (the "Kanbandiv" brand bar in
 `Sidebar.tsx` / the mobile `AppLayout.tsx` header). Typing a query searches CARDS
 across every board the user can view (backend `trpc.search.cards`), shows a result
 list with card title, its board/column, and a snippet, plus filters (label,

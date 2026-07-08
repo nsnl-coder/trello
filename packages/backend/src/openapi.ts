@@ -3,7 +3,7 @@ import { env } from "./config/env.config.js";
 import { appRouter } from "./trpc/router.js";
 
 export const openApiDocument = generateOpenApiDocument(appRouter, {
-  title: "Trelloclone API",
+  title: "Kanbandiv API",
   description: "Auth API (email + password, OTP verification & password reset).",
   version: "1.0.0",
   baseUrl: `http://localhost:${env.PORT}/api`,

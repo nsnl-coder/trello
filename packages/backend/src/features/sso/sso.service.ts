@@ -8,7 +8,7 @@ import { findUserGlobalPerms, type Db } from "../rbac/rbac.repo.js";
 // subdomains. Instead the app host mints a short-lived, audience-bound token; the
 // target host exchanges it for its own SSO session cookie (see sso.http.ts).
 
-const SSO_ISS = "trello-sso";
+const SSO_ISS = "kanbandiv-sso";
 export const SSO_COOKIE = "sso_admin";
 // nginx path on each protected host that proxies to /api/sso/callback.
 export const SSO_CALLBACK_PATH = "/__sso/callback";

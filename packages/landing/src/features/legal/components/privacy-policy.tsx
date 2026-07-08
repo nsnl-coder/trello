@@ -6,7 +6,7 @@ export function PrivacyPolicy() {
   return (
     <LegalPage title="Privacy Policy" updated="June 22, 2026">
       <p>
-        This Privacy Policy explains how Trello Clone (&quot;we&quot;,
+        This Privacy Policy explains how Kanbandiv (&quot;we&quot;,
         &quot;us&quot;, or &quot;the Service&quot;) collects, uses, and protects
         information when you use our project and board management application. By
         using the Service you agree to the practices described here.

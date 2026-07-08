@@ -49,7 +49,7 @@ const LOGO_URL = "https://kanbandiv.com/logo.png";
 const logoSection = `
         <mj-section padding-bottom="8px">
           <mj-column>
-            <mj-image width="48px" src="${LOGO_URL}" alt="Trello Clone" align="center" />
+            <mj-image width="48px" src="${LOGO_URL}" alt="Kanbandiv" align="center" />
           </mj-column>
         </mj-section>`;
 

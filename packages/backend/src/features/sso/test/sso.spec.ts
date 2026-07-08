@@ -94,7 +94,7 @@ describe("sso.service security", () => {
         algorithm: "HS256",
         subject: claims.sub,
         audience: MON,
-        issuer: "trello-sso",
+        issuer: "kanbandiv-sso",
       });
       expect(() => verifySsoToken(tok, MON)).toThrow();
     });
@@ -109,7 +109,7 @@ describe("sso.service security", () => {
         algorithm: "none",
         subject: claims.sub,
         audience: MON,
-        issuer: "trello-sso",
+        issuer: "kanbandiv-sso",
       });
       expect(() => verifySsoToken(tok, MON)).toThrow();
     });

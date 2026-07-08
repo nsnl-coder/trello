@@ -43,8 +43,8 @@ const constants = {
   // Single source of truth for access-token lifetime. The cookie maxAge is
   // derived from this (see ACCESS_TTL_MS below) so the two can never drift.
   JWT_ACCESS_TTL: '15m',
-  JWT_ISS: 'trelloclone',
-  JWT_AUD: 'trelloclone-web',
+  JWT_ISS: 'kanbandiv',
+  JWT_AUD: 'kanbandiv-web',
   REFRESH_TTL_MS: 7 * 24 * 60 * 60 * 1000,
   BCRYPT_COST: 12,
   MAIL_PORT: 2525,
@@ -68,7 +68,7 @@ const url = (def: string) =>
 // Everything below is a secret or varies by deployment, so it cannot be
 // determined in code and must be supplied via the environment.
 const schema = z.object({
-  DATABASE_URL: url('postgres://postgres:postgres@localhost:5432/trelloclone'),
+  DATABASE_URL: url('postgres://postgres:postgres@localhost:5432/kanbandiv'),
 
   // Secrets are ALWAYS required (no env-gated default) so a misconfigured
   // tier can never fall back to a committed signing key. Set them in the

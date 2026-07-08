@@ -35,7 +35,7 @@ export function Nav() {
       <div className="flex items-center text-sm">
         <Link to="/" className="flex items-center gap-1.5 font-semibold text-foreground">
           <LayoutDashboard className="h-4 w-4 text-indigo-600" />
-          Trello Clone
+          Kanbandiv
         </Link>
       </div>
       <div className="flex items-center justify-center gap-6 text-sm">

@@ -1,7 +1,7 @@
 {
   "uid": "logs-overview",
   "title": "Logs overview (Loki)",
-  "tags": ["trelloclone", "logs"],
+  "tags": ["kanbandiv", "logs"],
   "timezone": "browser",
   "schemaVersion": 39,
   "version": 1,

@@ -17,7 +17,7 @@ export function LegalPage({
       <header className="sticky top-0 z-40 border-b border-neutral-800 bg-neutral-950/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-6">
           <Link href="/" className="font-semibold tracking-tight">
-            Trello Clone
+            Kanbandiv
           </Link>
           <nav className="flex items-center gap-4 text-sm text-neutral-400">
             <Link href="/privacy" className="hover:text-neutral-100">
@@ -38,7 +38,7 @@ export function LegalPage({
 
       <footer className="border-t border-neutral-800">
         <div className="mx-auto flex max-w-3xl flex-col items-center justify-between gap-3 px-6 py-8 text-sm text-neutral-500 sm:flex-row">
-          <span className="font-medium text-neutral-300">Trello Clone</span>
+          <span className="font-medium text-neutral-300">Kanbandiv</span>
           <div className="flex items-center gap-5">
             <Link href="/privacy" className="hover:text-neutral-100">
               Privacy Policy

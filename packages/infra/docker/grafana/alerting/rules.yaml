@@ -6,7 +6,7 @@ apiVersion: 1
 groups:
   - orgId: 1
     name: backend-slo
-    folder: trelloclone
+    folder: kanbandiv
     interval: 1m
     rules:
       - uid: backend-down
@@ -95,7 +95,7 @@ groups:
 
   - orgId: 1
     name: backend-logs
-    folder: trelloclone
+    folder: kanbandiv
     interval: 1m
     rules:
       - uid: backend-error-logs

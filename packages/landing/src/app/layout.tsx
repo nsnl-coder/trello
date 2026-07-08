@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   metadataBase: new URL(env.siteUrl),
-  title: "Trello Clone",
+  title: "Kanbandiv",
   description: "Plan, track, and ship work with boards, lists, and cards.",
 };
 

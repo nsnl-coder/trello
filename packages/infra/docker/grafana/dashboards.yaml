@@ -3,9 +3,9 @@ apiVersion: 1
 # Load versioned dashboard JSON from the mounted folder. Files under
 # grafana/dashboards/ are auto-imported on startup (no manual import needed).
 providers:
-  - name: trelloclone
+  - name: kanbandiv
     orgId: 1
-    folder: trelloclone
+    folder: kanbandiv
     type: file
     disableDeletion: false
     allowUiUpdates: true

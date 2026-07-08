@@ -439,7 +439,7 @@ export function BackupPage() {
               className={input}
               value={form.gdriveFolderName}
               disabled
-              placeholder="Trello Clone Backups (env)"
+              placeholder="Kanbandiv Backups (env)"
               onChange={(e) => update({ gdriveFolderName: e.target.value })}
             />
             <p className="mt-1 text-xs text-muted">

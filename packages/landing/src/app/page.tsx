@@ -84,7 +84,7 @@ export default function Home() {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
           <Link href="/" className="flex items-center gap-1.5 font-semibold text-foreground">
             <LayoutDashboard className="h-5 w-5 text-indigo-600" />
-            Trello Clone
+            Kanbandiv
           </Link>
           <nav className="flex items-center gap-3 text-sm">
             <a
@@ -350,7 +350,7 @@ export default function Home() {
           <div>
             <span className="flex items-center gap-1.5 font-semibold text-foreground">
               <LayoutDashboard className="h-5 w-5 text-indigo-600" />
-              Trello Clone
+              Kanbandiv
             </span>
             <p className="mt-2 text-sm text-muted">
               Boards, lists, and cards for work that actually moves.

@@ -355,7 +355,7 @@ function SidebarContent({ headerAction }: { headerAction?: ReactNode }) {
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center gap-1.5 font-semibold text-foreground">
             <LayoutDashboard className="h-5 w-5 text-indigo-600" />
-            Trello Clone
+            Kanbandiv
           </Link>
           <div className="flex items-center gap-1">
             <NotificationBell />

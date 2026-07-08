@@ -28,7 +28,7 @@ tRPC `protectedProcedure`, Zod from `shared`, OpenAPI `.meta`, superjson. Reuse
     guess which cards were archived BY the cascade vs already archived
     individually — impossible without a marker column. Filter-by-parent restores a
     column and its still-active cards reappear automatically; cards the user had
-    individually archived stay archived. This is the correct Trello semantics.
+    individually archived stay archived. This is the correct kanban semantics.
   - **No write amplification / no partial-failure window.** Archiving a board is
     one UPDATE, not a sweep over every descendant (which `card.service` does NOT
     wrap in a transaction today — see `activity.backend.md` "after-commit" note).

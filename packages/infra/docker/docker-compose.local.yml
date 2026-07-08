@@ -13,7 +13,7 @@
 # No observability stack locally: backend env defaults degrade gracefully
 # (console traces, no Sentry, ops consoles hidden).
 
-name: trello-local
+name: kanbandiv-local
 
 x-node-dev: &node-dev
   image: node:22-bookworm-slim
@@ -30,13 +30,13 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: trelloclone
+      POSTGRES_DB: kanbandiv
     ports:
       - '5432:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres -d trelloclone']
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d kanbandiv']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -82,7 +82,7 @@ services:
         required: true
     environment:
       VPS_ENV: local
-      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/trelloclone
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/kanbandiv
       REDIS_URL: redis://redis:6379
       MINIO_ENDPOINT: http://minio:9000
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}

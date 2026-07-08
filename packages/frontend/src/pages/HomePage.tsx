@@ -7,7 +7,7 @@ export function HomePage() {
     <div className="flex min-h-screen flex-col bg-neutral-950 text-neutral-100">
       <main className="flex flex-1 flex-col items-center justify-center gap-8 px-6 text-center">
         <span className="rounded-full border border-neutral-800 px-3 py-1 text-xs uppercase tracking-widest text-neutral-400">
-          Trello Clone
+          Kanbandiv
         </span>
         <h1 className="max-w-2xl text-4xl font-semibold tracking-tight sm:text-6xl">
           Organize anything, together.

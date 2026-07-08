@@ -163,7 +163,7 @@ OpenAPI
 ## Added during implementation (not in original plan)
 
 - [x] `GET /admin/backup/upcoming` — next scheduled run times within 7 days (croner `nextRuns`, tz `Asia/Ho_Chi_Minh`). Powers the UI "Upcoming" list.
-- [x] Migration `008.backup-folder.ts` — `gdrive_folder_name` column. Admin-managed folder name with a per-env default (`Trello Clone Backups (local|dev|prod)`) so each env backs up to its own folder. `gdrive_folder_id` is now a resolved cache (invalidated when the name changes).
+- [x] Migration `008.backup-folder.ts` — `gdrive_folder_name` column. Admin-managed folder name with a per-env default (`Kanbandiv Backups (local|dev|prod)`) so each env backs up to its own folder. `gdrive_folder_id` is now a resolved cache (invalidated when the name changes).
 - [x] `ensureBackupFolder(name)` — find-or-create the named Drive folder (scope `drive.file` only sees app-created folders); resolved on connect + before each run; id exposed read-only in settings for the UI "Open Drive folder" link.
 - [x] OAuth hardening: identity carried via an HMAC-signed `state` param (`createOAuthState`/`verifyOAuthState`), not the session cookie — the callback is a cross-site redirect and `SameSite=strict` cookies aren't sent. Added `openid`+`userinfo.email` scopes to read the connected account email.
 - [x] `tar --force-local` so Windows `C:\...` archive paths aren't read as a remote host (no-op on Linux).

@@ -7,8 +7,8 @@ Two separate environments: **Dev VPS** for smoke testing → confirm OK → **Pr
 ## Must-follow rules:
 
 - **read `packages/infra/vps-info.md` first** for all VPS info (ssh aliases
-  `trello-dev-vps` / `trello-prod-vps`, hosts, repo path `/opt/trello`, domains,
-  and the deploy command `bash /opt/trello/deploy.sh`). Do not hardcode or guess
+  `kanbandiv-dev-vps` / `kanbandiv-prod-vps`, hosts, repo path `/opt/kanbandiv`, domains,
+  and the deploy command `bash /opt/kanbandiv/deploy.sh`). Do not hardcode or guess
   hosts/paths — they come from that file.
 - use scp to transfer the file into vps, do not read .env file unless user permitted
 - use scp to transfer the certs in packages/infra/certs
@@ -67,7 +67,7 @@ git push origin v1.3.0-rc.1
 
 ```bash
 ssh my-vps-dev
-cd /opt/trello/Trello_Infra
+cd /opt/kanbandiv/Kanbandiv_Infra
 git pull --tags
 git checkout v1.3.0-rc.1
 
@@ -138,7 +138,7 @@ This tag is the manual approval gate. No stable tag = no prod deploy.
 
 ```bash
 ssh my-vps-prod
-cd /opt/trello/Trello_Infra
+cd /opt/kanbandiv/Kanbandiv_Infra
 git pull --tags
 git checkout v1.3.0
 

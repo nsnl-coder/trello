@@ -143,7 +143,7 @@ export async function getUpcoming(
 
 // Per-env default so local/dev/prod back up into separate Drive folders.
 function defaultFolderName(): string {
-  return `Trello Clone Backups (${env.VPS_ENV})`;
+  return `Kanbandiv Backups (${env.VPS_ENV})`;
 }
 
 function folderNameFor(row: NonNullable<SettingsRow>): string {

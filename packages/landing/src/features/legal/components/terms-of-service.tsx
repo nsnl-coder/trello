@@ -7,7 +7,7 @@ export function TermsOfService() {
     <LegalPage title="Terms of Service" updated="June 22, 2026">
       <p>
         These Terms of Service (&quot;Terms&quot;) govern your access to and use
-        of Trello Clone (&quot;the Service&quot;). By creating an account or using
+        of Kanbandiv (&quot;the Service&quot;). By creating an account or using
         the Service, you agree to these Terms.
       </p>
 

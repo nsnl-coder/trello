@@ -22,7 +22,7 @@ import type { Db } from "./demo.repo.js";
 // for e2e accounts, but MUST stay distinct: is_test accounts get deterministic
 // OTPs, which would make a demo account trivially hijackable). .internal is
 // reserved (RFC 8375-adjacent), so no OTP/reset mail can ever be delivered.
-export const DEMO_EMAIL_DOMAIN = "demo.trelloclone.internal";
+export const DEMO_EMAIL_DOMAIN = "demo.kanbandiv.internal";
 
 /** Demo accounts (and, via FK cascades, all their content) live this long. */
 export const DEMO_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;

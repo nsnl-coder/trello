@@ -169,7 +169,7 @@ All new components live under `features/board/components/`; the page is
   horizontal LANES grouped by `swimlaneBy`:
   - `"label"`: one lane per board label (+ a "No label" lane). A card appears in
     each lane for each of its labels (a card with 2 labels shows in 2 lanes) â€”
-    DECIDED: duplicate across its label lanes (Trello-like); state it. Cards with
+    DECIDED: duplicate across its label lanes (kanban-like); state it. Cards with
     no labels go to "No label". Label lanes come from the `labels` prop.
   - `"assignee"`: one lane per assignee PRESENT ON THE FILTERED CARDS (+ an
     "Unassigned" lane). A card with multiple assignees appears in each.

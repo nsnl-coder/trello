@@ -1,7 +1,7 @@
 {
   "uid": "red-backend",
   "title": "Backend RED (rate / errors / duration)",
-  "tags": ["trelloclone", "red"],
+  "tags": ["kanbandiv", "red"],
   "timezone": "browser",
   "schemaVersion": 39,
   "version": 1,
